@@ -1,0 +1,854 @@
+[
+    {
+        "外文": "Protéines de G",
+        "中文": "G蛋白",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Erreur du joueur",
+        "中文": "赌徒谬误",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Théorie des jeux",
+        "中文": "博弈论",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Ganglion de",
+        "中文": "神经节",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "L’effet garcia",
+        "中文": "加西亚效应",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Gastrophine gastrine",
+        "中文": "促胃液素胃泌素",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Cybernétique de porte de douleur",
+        "中文": "疼痛闸门控制论",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Canaux ioniques fermés",
+        "中文": "门控离子通道",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "La distribution gaussienne",
+        "中文": "高斯分布",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Le sexe",
+        "中文": "性别",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Cohérence entre les sexes",
+        "中文": "性别一致性",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Sexe constant sexe",
+        "中文": "性别恒常性",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Développement du genre",
+        "中文": "性别发展",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Trouble de l’identité de genre",
+        "中文": "性别认同障碍",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Psychologie du genre",
+        "中文": "性别心理学",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Rôles de genre convictions",
+        "中文": "性别角色信念",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "gender schema",
+        "中文": "性别图式",
+        "语种": "",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Théorie des schémas de genre",
+        "中文": "性别图式论",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Stabilité du genre",
+        "中文": "性别稳定性",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Stéréotypes de genre",
+        "中文": "性别刻板印象",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Typologie du genre; Formation des caractéristiques de genre",
+        "中文": "性别类型化；性别特征形成",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Les gènes",
+        "中文": "基因",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Compétences générales compétences générales",
+        "中文": "一般能力普通能力",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Test d’aptitude générale",
+        "中文": "一般能力测验",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Quiz de réussite commune",
+        "中文": "普通成就测验",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Syndrome général d’adaptation syndrome universel d’adaptation",
+        "中文": "一般适应综合征普遍性适应综合征",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Propension générale à la compétence",
+        "中文": "一般能力倾向",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Test d’aptitude générale",
+        "中文": "一般能力倾向成套测验",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Intelligence en général",
+        "中文": "一般智力",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Connaissance générale du vocabulaire",
+        "中文": "一般词汇知识",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Modèles linéaires généraux",
+        "中文": "一般线性模型",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Capacités mentales générales",
+        "中文": "一般心理能力",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Solution universelle solution universelle",
+        "中文": "通用解题者通用问题解决者",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Théorie générale de la tension; Théorie générale du stress",
+        "中文": "一般紧张理论；一般压力理论",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Aucune des",
+        "中文": "概化",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Étude de généralisation",
+        "中文": "概化研究",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Théorie de généralisation",
+        "中文": "概化理论",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "résumé",
+        "中文": "概括",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Trouble d’anxiété généralisée",
+        "中文": "广泛性焦虑症",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Modèles linéaires généralisés",
+        "中文": "广义线性模型",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Le renforcement généralisé",
+        "中文": "概括性强化物",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "La terreur sociale généralisée",
+        "中文": "广泛性社交恐怖症",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Générer une syntaxe",
+        "中文": "生成语法",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Apprentissage génératif",
+        "中文": "生成性学习",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Sémantique générative",
+        "中文": "生成语义学",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Couple d’élevage stagnation",
+        "中文": "繁殖对停滞",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Démarrer le potentiel",
+        "中文": "启动电位",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Epistémologie génétique",
+        "中文": "发生认识论",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Ecole de genève",
+        "中文": "日内瓦学派",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "génomique",
+        "中文": "基因组",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Le génotype",
+        "中文": "基因型",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "sincèrement",
+        "中文": "真诚",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Gestalt gestalt gestalt gestalt",
+        "中文": "格式塔完形",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Psychologie gestalt psychologie gestalt",
+        "中文": "格式塔心理学完形心理学",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Psychothérapie gestalt psychothérapie gestalt",
+        "中文": "格式塔心理治疗完形心理治疗",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Gestalt thérapie gestalt thérapie",
+        "中文": "格式塔疗法完形疗法",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Les gestes",
+        "中文": "手势",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Hormones de stimulation de l’appétit",
+        "中文": "食欲刺激激素",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Effet plafond de verre",
+        "中文": "玻璃天花板效应",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "L’oubli complet",
+        "中文": "完全性遗忘",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Une aphasie complète",
+        "中文": "完全失语症",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Évaluation fonctionnelle globale",
+        "中文": "整体功能评估",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "globalisation",
+        "中文": "全球化",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Le nerf glosso-pharyngien",
+        "中文": "舌咽神经",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Glucagon glucagon",
+        "中文": "胰高血糖素",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Glucocorticoïdes et hormones",
+        "中文": "糖皮质激素",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Manque de sucre",
+        "中文": "糖缺乏",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Glucose en",
+        "中文": "葡萄糖",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Métabolisme du glucose",
+        "中文": "葡萄糖代谢",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Hypothèse de glucose constant",
+        "中文": "葡萄糖恒定假说",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Récepteur de glutamate",
+        "中文": "谷氨酸受体",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Glutamate et glutamate",
+        "中文": "谷氨酸",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Glutamine et glutamine",
+        "中文": "谷氨酰胺",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Glycine et glycine",
+        "中文": "甘氨酸",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "glycogène",
+        "中文": "糖原",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Essayer sans essayer le test d’association",
+        "中文": "尝试不尝试联想测验",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Définition des objectifs",
+        "中文": "目标设置",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Théorie de l’établissement des objectifs",
+        "中文": "目标设置理论",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Etat des cibles",
+        "中文": "目标状态",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Orientation des objectifs",
+        "中文": "目标导向取向",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Comportement ciblé",
+        "中文": "目标导向行为",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Objectifs orientés vers l’apprentissage",
+        "中文": "目标指向学习",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "But pointant vers la pensée but pointant vers la pensée",
+        "中文": "目标指向思维目的指向思维",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Leader de l’orientation ciblée",
+        "中文": "目标取向领导者",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Tendinateur neurotendon sogorky",
+        "中文": "神经腱梭高尔基腱器",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "gonades",
+        "中文": "性腺",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "gonadectomie",
+        "中文": "性腺切除术",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Facteur de libération de gonadotrophine",
+        "中文": "促性腺激素释放因子",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Hormone libératrice de gonadotrophine",
+        "中文": "促性腺激素释放激素",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Excellence de l’ajustement",
+        "中文": "拟合优度",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Modèles de qualité ajustés",
+        "中文": "拟合优度模型",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Test d’adéquation test d’adéquation",
+        "中文": "适合度检验拟合优度检验",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Norme de grade",
+        "中文": "年级常模",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Niveau quantité potentiel",
+        "中文": "级量电位",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Tendre vers le gradient",
+        "中文": "趋近梯度",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Échapper au gradient",
+        "中文": "逃避梯度",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "gradient of reward",
+        "中文": "奖赏梯度",
+        "语种": "",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Stratégie réciproque progressive de réduction des tensions",
+        "中文": "渐进互惠降低紧张策略",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "La grammaire",
+        "中文": "语法",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Analyse de grammaire",
+        "中文": "语法分析",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Lexèmes grammaticaux",
+        "中文": "语法词素",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Conversion de phonèmes kata",
+        "中文": "形素音素转换",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Graphic Rating Scale",
+        "中文": "图示评定量表",
+        "语种": "",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "La matière grise",
+        "中文": "灰质",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "great person theory",
+        "中文": "伟人论",
+        "语种": "",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Thérapie du deuil",
+        "中文": "悲伤疗法",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Groupes groupes groupes",
+        "中文": "群体团体",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Test d’aptitude de groupe",
+        "中文": "团体能力测验",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Comportement du groupe",
+        "中文": "群体行为",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Ambiance de groupe",
+        "中文": "群体气氛",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Cohésion du groupe",
+        "中文": "群体凝聚力",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Conflits de groupes",
+        "中文": "团体冲突",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Conscience de groupe",
+        "中文": "群体意识",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Consultation de groupe consultation collective",
+        "中文": "团体咨询集体咨询",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Système d’aide à la décision de groupe",
+        "中文": "团体决策支持系统",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Dynamique de groupe dynamique de groupe",
+        "中文": "群体动力学团体动力学",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "L’effet de groupe",
+        "中文": "群体效应",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Quiz graphique caché de groupe",
+        "中文": "团体隐蔽图形测验",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Identification du groupe",
+        "中文": "团体认同",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Normes pour groupes",
+        "中文": "群体规范",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Normalisation du groupe",
+        "中文": "团体规范化",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Performance du groupe",
+        "中文": "团体表现",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Polarisation du groupe",
+        "中文": "团体极化",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Pression de groupe",
+        "中文": "群体压力",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Parcours en groupe",
+        "中文": "团体历程",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Psychologie des groupes",
+        "中文": "群体心理学",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Psychothérapie de groupe psychothérapie de groupe",
+        "中文": "集体心理治疗小组心理治疗",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Options pour groupes",
+        "中文": "团体选择",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Système de soutien de groupe",
+        "中文": "团体支持系统",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Thérapie de groupe",
+        "中文": "团体治疗",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Centre de croissance",
+        "中文": "成长中心",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Modèle de courbe de croissance",
+        "中文": "生长曲线模型",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Force d’entraînement adulte",
+        "中文": "成长驱力",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Motivation à grandir",
+        "中文": "成长动机",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Besoin de croissance",
+        "中文": "成长需要",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Augmentation abrupte du développement; Croissance très forte",
+        "中文": "发育陡增；成长陡增",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "La guanine",
+        "中文": "鸟嘌呤",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Guider la fantaisie",
+        "中文": "导向幻想",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Méthode de l’imagination guidée",
+        "中文": "引导性想象法",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "Sentiment de culpabilité",
+        "中文": "罪恶感",
+        "语种": "fr",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "gustatory system",
+        "中文": "味觉系统",
+        "语种": "",
+        "类别": "首字母G"
+    },
+    {
+        "外文": "circonvolution",
+        "中文": "脑回",
+        "语种": "fr",
+        "类别": "首字母G"
+    }
+]

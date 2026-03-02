@@ -1,0 +1,64 @@
+{
+  "GOV": [
+    "gov", "gouv", "gob", "gov.cn", "gov.uk", "gov.au", "gob.mx", "gov.sk",
+    "iuventa.sk", "ministerio", "dept", "agency", "state", "federal", "municipio", "prefecture",
+    "govt", "government", "county", "cityhall", "municipal", "provincial", "regulatory",
+    "authority", "federalreserve", "irs", "fbi", "garda", "police.uk", "gc.ca", "govt.nz",
+    "bund.de", "kementerian", "presidency", "parliament", "congress", "senate", "council"
+  ],
+  "EDU": [
+    "edu", "ac", "university", "college", "institute", "academic", "research", "science",
+    "edu.cn", "ac.uk", "edu.au", "uni.", "polytechnic", "scholar", "professor", "lab", "campus",
+    "school", "kindergarten", "preschool", "highschool", "middleschool", "primaryschool",
+    "vocational", "technicalschool", "academy", "faculty", "thesis", "dissertation",
+    "scholarship", "student", "alumni", "tutor", "mentor", "curriculum", "semester", "credit",
+    "degree", "certificate", "phd", "master", "bachelor", "department"
+  ],
+  "EDUCOMM": [
+    "coursera", "udemy", "edx", "mooc", "khanacademy", "futurelearn", "skillshare",
+    "pluralsight", "udacity", "udemycdn", "linkedinlearning", "codecademy", "lynda",
+    "treehouse", "datacamp", "opensap", "masterclass", "skillsoft", "open2study", "alison",
+    "udemyforbusiness", "codewars", "freecodecamp", "edmodo", "classdojo", "duolingo",
+    "memrise", "babbel", "busuu", "lingoda", "edxforbusiness", "pluralsightone", "codecademypro"
+  ],
+  "ORG": [
+    "un.org", "who.int", "unesco", "imf", "ilo", "worldbank", "ngo", "wto",
+    "icrc", "org", "redcross", "oxfam", "greenpeace", "amnesty", "transparency.org",
+    "icj", "icc", "union", "association", "alliance", "council", "forum",
+    "oecd", "g20", "asean", "nato", "fao", "rotary", "lionsclub", "charity", "foundation",
+    "trust", "coalition", "network", "initiative", "movement", "society", "msf", "care",
+    "billgatesfoundation", "rockefellerfoundation", "gatesfoundation", "wef", "club"
+  ],
+  "WIKI": [
+    "wikipedia", "wikidata", "wiktionary", "baike.baidu", "hudong", "citizendium",
+    "encarta", "britannica", "factmonster", "infoplease", "scribd",
+    "wikiwand", "fandom", "wikisource", "wikimedia", "wikinews", "wikiversity",
+    "encyclopedia", "columbiaencyclopedia", "worldbook", "grolier", "sogoubaike", "360baike",
+    "wikipediafoundation", "baiduencyclopedia"
+  ],
+  "NEWS": [
+    "bbc", "cnn", "reuters", "xinhuanet", "nytimes", "dw.com", "guardian", "ft.com",
+    "bloomberg", "cnbc", "apnews", "aljazeera", "huffpost", "vox.com", "wsj.com",
+    "time.com", "economist", "thetimes", "telegraph", "chinatimes", "japantimes",
+    "nbcnews", "abcnews", "cbsnews", "foxnews", "msnbc", "usa today", "latimes", "washingtonpost",
+    "atlantic", "newyorker", "nationalgeographic", "sciencemag", "nature", "chinadaily",
+    "globaltimes", "southchinamorningpost", "asahishimbun", "yomiurishimbun", "afp",
+    "people.com.cn", "cctv.com", "凤凰网", "澎湃新闻", "界面新闻"
+  ],
+  "COMMERCE": [
+    "amazon", "ebay", "alibaba", "taobao", "jd.com", "shop", "mall", "retail", "bestbuy",
+    "walmart", "tmall", "flipkart", "rakuten", "mercadolibre",
+    "ecommerce", "shopify", "etsy", "zappos", "sephora", "macys", "target", "costco",
+    "aldi", "lidl", "carrefour", "newegg", "pinduoduo", "suning", "gome", "shein", "asos",
+    "zara", "h&m", "uniqlo", "nike", "adidas", "paypal", "stripe", "shopee", "lazada",
+    "coupang", "mercado", "wayfair", "overstock", "chewy", "dell", "hp", "apple", "samsung"
+  ],
+  "SOCIAL": [
+    "facebook", "twitter", "instagram", "linkedin", "tiktok", "wechat", "weibo", "snapchat",
+    "reddit", "pinterest", "discord", "telegram", "quora",
+    "whatsapp", "qq", "douban", "xiaohongshu", "bilibili", "tumblr", "flickr", "vimeo",
+    "twitch", "medium", "slack", "microsoftteams", "signal", "mastodon", "mewe", "parler",
+    "periscope", "vine", "foursquare", "goodreads", "letterboxd", "behance", "dribbble",
+    "kuaishou", "xiaohongshu", "douyin", "kwai", "line", "kakao"
+  ]
+}
