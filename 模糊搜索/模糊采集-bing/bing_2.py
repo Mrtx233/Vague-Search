@@ -23,7 +23,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 try:
-    from wps推送.wps_push import send_wps_robot, notify_event
+    from utils.wps推送.wps_push import send_wps_robot, notify_event
 except Exception:
     def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
         return False

@@ -1,795 +1,791 @@
-import subprocess
-import time
-import re
+﻿import time
 import os
 import random
 import logging
 import urllib3
 import json
 import requests
-from concurrent.futures import ThreadPoolExecutor
+import redis
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 from pathlib import Path
 import sys
-import queue
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 from datetime import datetime
-import traceback
-import hashlib
-import portalocker
 
-# 尝试导入FastText
+from utils.search_utils import search_keyword
+from utils.download_utils import download_file
+from utils.file_utils import calculate_md5, generate_filename_from_md5
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+try:
+    from utils.wps推送.wps_push import send_wps_robot, notify_event
+except Exception:
+    def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
+        return False
+
+    def notify_event(
+        event_title: str,
+        start_dt: datetime,
+        config: Dict,
+        extra: str = "",
+        throttle_key: str = "event",
+        error_detail: str = "",
+        jsonl_filename: Optional[str] = None,
+        script_name: Optional[str] = None,
+    ) -> bool:
+        return False
+
 try:
     import fasttext
+
     fasttext_available = True
 except ImportError:
     fasttext = None
     fasttext_available = False
+    logging.warning("FastText未安装，语言检测功能将被禁用")
 
-# 导入DrissionPage异常
-from DrissionPage.errors import PageDisconnectedError, BrowserConnectError
 
-# 添加gen_md5.py所在目录
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from xuehua.gen_md5 import get_snowflake_id
-
-# 导入工具模块
-from utils.search_utils import create_browser_page, initialize_browser_for_search, \
-    search_keyword_with_existing_page, SearchBoxNotFoundException
-from utils.download_utils import download_file
-from utils.file_utils import calculate_md5, generate_filename_from_md5, JSONLManager
-
-# 禁用证书警告
 urllib3.disable_warnings()
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(message)s')
 
-# ========================== 0. 全局上下文（用于WPS消息自动带四参数） ==========================
-CURRENT_KEYWORD_FILE = ""
-CURRENT_JSONL_FILENAME = ""
-CURRENT_SCRIPT_PATH = os.path.abspath(__file__)
-CURRENT_FINISHED_FILE = ""
+REDIS_HOST = "10.229.32.166"
+REDIS_PORT = 6379
+REDIS_DB = 0
+REDIS_PREFIX = "crawler"
+PROGRESS_REPORT_INTERVAL_SECONDS = 1800
 
-
-def sanitize_filename(name: str) -> str:
-    return re.sub(r'[<>:"/\\|?*]', '_', str(name), flags=re.UNICODE)
-
-
-def safe_name(name: str) -> str:
-    v = sanitize_filename(name).strip()
-    return v if v else "未知"
+rds = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
 
 
-def extract_lang_from_path(input_path: str) -> str:
-    """
-    从 json 路径提取语种：
-    - 优先 output 后一级目录：...\\output\\法语\\xxx.json -> 法语
-    - 兜底：父目录名
-    """
-    p = os.path.normpath(input_path)
-    parts = p.split(os.sep)
-    lang = ""
+def finished_key_bing() -> str:
+    return f"{REDIS_PREFIX}:keyword_finished:bing"
+
+
+def is_finished_bing(keyword: str) -> bool:
+    return bool(rds.sismember(finished_key_bing(), keyword))
+
+
+def mark_finished_bing(keyword: str) -> bool:
+    return rds.sadd(finished_key_bing(), keyword) == 1
+
+
+def finished_count_bing() -> int:
     try:
-        idx = parts.index("output")
-        if idx + 1 < len(parts):
-            lang = parts[idx + 1]
-    except ValueError:
-        lang = ""
-
-    if not lang:
-        lang = os.path.basename(os.path.dirname(p))
-
-    return safe_name(lang)
-
-
-def build_finished_json_path(base_dir: str, json_input_path: str) -> Path:
-    lang = extract_lang_from_path(json_input_path)
-    return Path(base_dir) / f"{lang}_finished_keywords.json"
-
-
-# ========================== 1. WPS 群机器人通知模块 ==========================
-WPS_NOTIFY_ENABLED = True
-WPS_ROBOT_WEBHOOK = "https://365.kdocs.cn/woa/api/v1/webhook/send?key=add87b4b34f7ecaebf14c4e133ab9d5c"
-
-WPS_THROTTLE_SECONDS = 60
-_LAST_WPS_TS: Dict[str, float] = {}
-
-STATE = {
-    "current_keyword": "无",
-    "status": "初始化",
-    "success_count": 0
-}
-
-
-def send_wps_robot(content: str, throttle_key="default") -> bool:
-    """基础发送函数"""
-    if not WPS_NOTIFY_ENABLED:
-        return False
-    now = time.time()
-    last_ts = _LAST_WPS_TS.get(throttle_key, 0)
-    # 强制发送 final, captcha, stop 类型的消息
-    if throttle_key not in ["final", "captcha", "start", "stop"] and now - last_ts < WPS_THROTTLE_SECONDS:
-        return False
-    _LAST_WPS_TS[throttle_key] = now
-
-    try:
-        payload = {"msgtype": "text", "text": {"content": content}}
-        resp = requests.post(WPS_ROBOT_WEBHOOK, json=payload, timeout=10)
-        return resp.status_code == 200
-    except Exception as e:
-        print(f"❌ WPS机器人异常: {e}")
-        return False
-
-
-def send_formatted_wps_msg(title: str, level: str = "info", fields: Dict = None, extra_text: str = "",
-                           throttle_key: str = "default") -> bool:
-    """
-    统一格式化发送消息（自动注入四个参数）
-    - 关键词文件 / JSONL文件 / py脚本 / finished文件
-    """
-    icons = {"start": "🚀", "success": "✅", "error": "🚨", "warning": "🔔", "info": "📝", "stop": "🛑"}
-    icon = icons.get(level, "📝")
-
-    # --- 自动注入四个参数 ---
-    base_fields = {
-        "关键词文件": CURRENT_KEYWORD_FILE or "未知",
-        "JSONL文件": CURRENT_JSONL_FILENAME or "未知",
-        "py脚本": CURRENT_SCRIPT_PATH or "未知",
-        "finished文件": CURRENT_FINISHED_FILE or "未知",
-    }
-
-    merged_fields = {}
-    merged_fields.update(base_fields)
-    if fields:
-        merged_fields.update(fields)  # 调用处传入的字段覆盖同名字段
-
-    lines = [f"{icon} 【{title}】", "━━━━━━━━━━━━━━"]
-
-    for k, v in merged_fields.items():
-        lines.append(f"• {k}: {str(v).strip()}")
-
-    if extra_text:
-        lines.append("━━━━━━━━━━━━━━")
-        clean_extra = extra_text.strip()
-        if len(clean_extra) > 500:
-            lines.append(f"...(前略)\n{clean_extra[-500:]}")
-        else:
-            lines.append(clean_extra)
-
-    return send_wps_robot("\n".join(lines), throttle_key)
-
-
-def get_error_context(e: Exception) -> str:
-    """提取报错简要信息和行号"""
-    try:
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        current_file = os.path.basename(__file__)
-        error_line = "未知"
-        tb = exc_traceback
-        while tb:
-            frame = tb.tb_frame
-            code = frame.f_code
-            if os.path.basename(code.co_filename) == current_file:
-                error_line = tb.tb_lineno
-            tb = tb.tb_next
-        return f"Line {error_line}: {str(e)}"
+        return int(rds.scard(finished_key_bing()))
     except Exception:
-        return str(e)
+        return 0
 
 
-# ========================== 2. 彩色日志配置 ==========================
-RESET, WHITE, YELLOW, GREEN, RED, BLUE = "\033[0m", "\033[37m", "\033[33m", "\033[32m", "\033[31m", "\033[34m"
+def seen_url_key_bing(lang: str) -> str:
+    return f"{REDIS_PREFIX}:seen_url:bing:{lang}"
 
 
-class ColorFormatter(logging.Formatter):
-    YELLOW_PATTERNS = ("启动浏览器", "配置", "初始化")
-    BLUE_PATTERNS = ("执行搜索", "搜索关键词")
-    GREEN_PATTERNS = ("下载成功", "搜索完成", "任务结束", "全部完成", "WPS通知发送成功", "改名完成")
-    RED_PATTERNS = ("失败", "出错", "异常", "断开", "未找到", "崩溃", "停止", "改名失败")
-
-    def format(self, record: logging.LogRecord) -> str:
-        msg = super().format(record)
-        if record.levelno >= logging.WARNING:
-            return f"{RED}{msg}{RESET}"
-        if any(p in msg for p in self.GREEN_PATTERNS):
-            return f"{GREEN}{msg}{RESET}"
-        if any(p in msg for p in self.BLUE_PATTERNS) and "搜索完成" not in msg:
-            return f"{BLUE}{msg}{RESET}"
-        if any(p in msg for p in self.YELLOW_PATTERNS):
-            return f"{YELLOW}{msg}{RESET}"
-        if any(p in msg for p in self.RED_PATTERNS):
-            return f"{RED}{msg}{RESET}"
-        return f"{WHITE}{msg}{RESET}"
+def is_new_bing_url(lang: str, url: str) -> bool:
+    return rds.sadd(seen_url_key_bing(lang), url) == 1
 
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logger.handlers.clear()
-handler = logging.StreamHandler()
-handler.setFormatter(ColorFormatter('[%(asctime)s] %(levelname)s - %(message)s'))
-logger.addHandler(handler)
+def seen_md5_key_bing() -> str:
+    return f"{REDIS_PREFIX}:seen_md5"
 
 
-# ========================== 3. 爬虫逻辑 ==========================
+def claim_bing_md5(md5_hash: str) -> bool:
+    if not md5_hash:
+        return False
+    return rds.sadd(seen_md5_key_bing(), md5_hash.lower()) == 1
 
+
+def rollback_bing_md5(md5_hash: str) -> None:
+    if not md5_hash:
+        return
+    try:
+        rds.srem(seen_md5_key_bing(), md5_hash.lower())
+    except Exception:
+        pass
+
+
+def result_key_bing(lang: str) -> str:
+    return f"{REDIS_PREFIX}:results:bing:{lang}"
+
+
+def push_result_line_bing(lang: str, json_obj: Dict) -> None:
+    line = json.dumps(json_obj, ensure_ascii=False, separators=(',', ':'))
+    rds.rpush(result_key_bing(lang), line)
+
+
+# ========== 爬虫配置类（简化版，防止页面卡住） ==========
 class CrawlerConfig:
-    MAX_PAGES_PER_KEYWORD = 15
+    """爬虫配置类
+
+    说明：
+    - 已移除复杂的 chromium_config.py，配置直接集成在代码中
+    - 简化了浏览器启动参数，只保留核心必要参数
+    - 增加了超时和重试机制，防止页面卡住导致元素识别失败
+    - 使用正常加载模式，避免过度优化导致的兼容性问题
+    """
+    # 搜索配置
+    MAX_PAGES_PER_KEYWORD = 15  # 每个关键词最大搜索页数
     BROWSER_INIT_URL = "https://cn.bing.com/search?q=科技"
-    BROWSER_RESTART_INTERVAL = 20
-    MAX_SEARCHBOX_NOT_FOUND = 5
-    CHROMIUM_CONFIG_NAME = 'fast_search'
-    CHROMIUM_HEADLESS = False
-    DEFAULT_MAX_WORKERS = 1
-    DOWNLOAD_WORKERS = 10
-    SEARCH_DOWNLOAD_PARALLEL = True
+    BROWSER_RESTART_INTERVAL = 50  # 每搜索多少个关键字后重启浏览器（避免内存泄漏）
+    MAX_SEARCHBOX_NOT_FOUND = 5  # 连续未找到搜索框多少次后强制重启浏览器
+
+    # Chromium配置（简化版）
+    CHROMIUM_CONFIG_NAME = 'fast_search'  # Chromium配置方案
+    CHROMIUM_HEADLESS = False  # 无头模式设置
+    # False = 显示浏览器窗口（可以看到搜索过程，便于调试，推荐设置）
+    # True  = 无头模式（隐藏窗口，运行更快，但可能更容易出现元素识别问题）
+
+    # 并发配置
+    DEFAULT_MAX_WORKERS = 1  # 关键字处理并发数（使用单个浏览器窗口）
+    DOWNLOAD_WORKERS = 10  # 下载线程池大小（10个线程并发下载）
+
+    # 搜索和下载并行配置
+    SEARCH_DOWNLOAD_PARALLEL = True  # 搜索和下载是否并行执行
 
 
 class DrissionPageCrawlerManager:
-    LANG_MAP = {
-        '__label__zh': '中文', '__label__en': '英语', '__label__es': '西班牙语',
-        '__label__fr': '法语', '__label__de': '德语', '__label__ja': '日语',
-        '__label__ko': '韩语', '__label__ru': '俄语', '__label__pt': '葡萄牙语',
-        '__label__it': '意大利语', '__label__ar': '阿拉伯语'
-    }
-
     def __init__(self, base_dir: str, max_workers: int = 5, fasttext_model_path: Optional[str] = None,
-                 allowed_extensions: Optional[List[str]] = None, json_input_file: str = ""):
+                 allowed_extensions: Optional[List[str]] = None):
         self.base_dir = Path(base_dir)
         self.max_workers = max_workers
-        self.seen_urls = set()
-        self.global_seen_urls = set()
-        self.seen_md5_hashes = set()
         self.lock = threading.RLock()
 
-        self.download_executor = None
-        self.download_running = False
-        self.download_futures = []
+        # 搜索和下载并行相关
+        self.download_executor = None  # 全局下载线程池
+        self.download_running = False  # 下载线程池是否运行中
+        self.download_futures = []  # 下载任务futures列表
 
+        # 允许的文件扩展名（小写）
         self.allowed_extensions = set()
-        self.json_input_file = json_input_file
-
         if allowed_extensions:
             for ext in allowed_extensions:
+                # 统一处理为小写，并确保有点号前缀
                 clean_ext = ext.lower().strip()
                 if not clean_ext.startswith('.'):
                     clean_ext = '.' + clean_ext
                 self.allowed_extensions.add(clean_ext)
 
+        # 初始化FastText语言检测模型
         self.language_model = None
         if fasttext_available and fasttext_model_path and os.path.exists(fasttext_model_path):
             try:
                 self.language_model = fasttext.load_model(fasttext_model_path)
-                logging.info("📘 FastText语言检测模型加载成功")
+                logging.info(f"FastText语言检测模型加载成功: {fasttext_model_path}")
             except Exception as e:
                 logging.error(f"FastText模型加载失败: {e}")
+        else:
+            if fasttext_model_path:
+                logging.warning(f"FastText模型文件不存在: {fasttext_model_path}")
+            logging.warning("语言检测功能将被禁用")
 
-        self.jsonl_dir = self.base_dir / "jsonl文件"
+        # 创建必要的目录
         self.download_dir = self.base_dir / "样张文件"
-        self.jsonl_dir.mkdir(parents=True, exist_ok=True)
         self.download_dir.mkdir(parents=True, exist_ok=True)
 
-        self.jsonl_file = self.find_or_create_jsonl_file()
-        self.jsonl_manager = JSONLManager(self.jsonl_file)
-
-        self.load_existing_md5_hashes()
-        self.load_global_seen_urls()
-
-        # finished 文件按语种拆分
-        if self.json_input_file:
-            self.finished_keywords_file = build_finished_json_path(str(self.base_dir), self.json_input_file)
-        else:
-            self.finished_keywords_file = self.base_dir / "finished_keywords.json"
-
+        # 已完成关键字（Redis）
         self.finished_keywords = self.load_finished_keywords()
+        self.current_keyword = ""
 
-        global CURRENT_JSONL_FILENAME
-        CURRENT_JSONL_FILENAME = self.jsonl_file.name
 
-        self._finished_last_reload_ts = 0
-        self._finished_reload_interval = 10  # 秒
-
-    def load_global_seen_urls(self):
-        logging.info("📚 正在加载全局历史URL记录...")
-        count = 0
-        if self.jsonl_dir.exists():
-            for fp in self.jsonl_dir.glob("*.jsonl"):
-                try:
-                    with open(fp, 'r', encoding='utf-8') as f:
-                        for line in f:
-                            if not line.strip():
-                                continue
-                            try:
-                                data = json.loads(line)
-                                if data.get('srcUrl'):
-                                    self.global_seen_urls.add(data['srcUrl'])
-                                    count += 1
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-        logging.info(f"✅ 全局去重库构建完成，共包含 {count} 条历史URL")
-
-    def get_language_folder(self, text: str) -> str:
-        if not self.language_model or not text:
-            return "其他语言"
-        try:
-            clean_text = text.replace('\n', ' ').strip()
-            if not clean_text:
-                return "其他语言"
-            predictions = self.language_model.predict(clean_text)
-            if predictions and predictions[0]:
-                return self.LANG_MAP.get(predictions[0][0], "其他语言")
-        except Exception:
-            pass
-        return "其他语言"
-
-    def find_or_create_jsonl_file(self) -> Path:
-        try:
-            if self.json_input_file:
-                norm_path = os.path.normpath(os.path.abspath(self.json_input_file)).lower()
-                md5_name = hashlib.md5(norm_path.encode("utf-8")).hexdigest()
-                jsonl_path = self.jsonl_dir / f"{md5_name}.jsonl"
-                logging.info(f"📝 使用基于输入文件的JSONL: {jsonl_path.name}")
-                return jsonl_path
-
-            jsonl_files = list(self.jsonl_dir.glob("*.jsonl"))
-            if jsonl_files:
-                return max(jsonl_files, key=lambda f: f.stat().st_mtime)
-
-            snowflake_id = get_snowflake_id(11, 1)
-            return self.jsonl_dir / f"{snowflake_id}.jsonl"
-        except Exception:
-            return self.jsonl_dir / f"{int(time.time())}.jsonl"
+        # logging.info(f" 已加载 {len(self.finished_keywords)} 个已搜索的关键字（Redis）")
+        # logging.info(f" MD5去重Key: {seen_md5_key_bing()}")
 
     def start_download_executor(self):
+        """启动全局下载线程池"""
         if not self.download_running and CrawlerConfig.SEARCH_DOWNLOAD_PARALLEL:
             self.download_executor = ThreadPoolExecutor(max_workers=CrawlerConfig.DOWNLOAD_WORKERS)
             self.download_running = True
-            logging.info("🚀 启动全局下载线程池")
 
     def stop_download_executor(self):
+        """停止全局下载线程池"""
         if self.download_running and self.download_executor:
+            # 等待所有下载任务完成
+            if self.download_futures:
+                logging.info(f" 等待 {len(self.download_futures)} 个下载任务完成...")
+                for future in as_completed(self.download_futures):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        logging.error(f"下载任务出错: {e}")
+
             self.download_executor.shutdown(wait=True)
             self.download_running = False
-            logging.info("✅ 全局下载线程池已关闭")
+            logging.info(" 全局下载线程池已关闭")
 
     def add_download_task(self, result: Dict, keyword: str, idx: int):
+        """添加下载任务到队列"""
         if CrawlerConfig.SEARCH_DOWNLOAD_PARALLEL and self.download_running:
-            self.download_futures.append(
-                self.download_executor.submit(self.process_single_result_with_callback, result, keyword, idx)
+            future = self.download_executor.submit(
+                self.process_single_result_with_callback,
+                result,
+                self.download_dir,
+                keyword,
+                idx
             )
+            self.download_futures.append(future)
         else:
-            self.process_single_result(result)
+            # 传统同步下载
+            return self.process_single_result(result, self.download_dir)
 
-    def process_single_result_with_callback(self, result: Dict, keyword: str, idx: int) -> Optional[Dict]:
-        processed_result = self.process_single_result(result)
+    def process_single_result_with_callback(self, result: Dict, download_dir: Path, keyword: str, idx: int) -> Optional[
+        Dict]:
+        """处理单个下载任务，带回调"""
+        processed_result = self.process_single_result(result, download_dir)
         if processed_result:
-            self.jsonl_manager.write_record(processed_result)
-            STATE["success_count"] += 1
-            logging.info(f"✅ [KWD-{idx}] 下载成功: {processed_result.get('title', '')[:20]}...")
+            lang = processed_result.get('extend', {}).get('language', '未知')
+            push_result_line_bing(lang, processed_result)
+            logging.info(f" [关键字 {idx}] {keyword} - 文件下载完成: {processed_result.get('title', 'Unknown')}")
         return processed_result
 
-    def load_existing_md5_hashes(self):
-        count = 0
-        try:
-            if self.download_dir.exists():
-                for file_path in self.download_dir.rglob('*'):
-                    if file_path.is_file() and len(file_path.name) > 32 and '.' in file_path.name:
-                        self.seen_md5_hashes.add(file_path.name.split('.')[0].lower())
-                        count += 1
-        except Exception:
-            pass
-        logging.info(f"🔒 已加载 {count} 个文件MD5哈希")
-
-    def is_md5_hash_exists(self, md5_hash: str) -> bool:
-        return md5_hash.lower() in self.seen_md5_hashes
-
     def choose_keyword(self, item: Dict) -> Optional[str]:
-        for candidate in [item.get('外文'), item.get('中文')]:
+        """选择搜索关键词：优先外文，其次中文"""
+        candidates = [
+            item.get('外文'),
+            item.get('外文'),
+        ]
+        for candidate in candidates:
             if candidate and str(candidate).strip():
                 return str(candidate).strip()
         return None
 
     def load_finished_keywords(self) -> set:
+        """从Redis加载已完成的关键字列表"""
         try:
-            if self.finished_keywords_file.exists():
-                with open(self.finished_keywords_file, 'r', encoding='utf-8') as f:
-                    return set(json.load(f).get('finished_keywords', []))
-        except Exception:
-            pass
-        return set()
-
-    import portalocker
-    import json
-    import os
-    from pathlib import Path
+            return set(rds.smembers(finished_key_bing()))
+        except Exception as e:
+            logging.error(f"加载Redis已完成关键字失败: {e}")
+            return set()
 
     def save_finished_keyword(self, keyword: str):
-        """
-        多进程安全写入 finished_keywords_file
-        - 跨进程文件锁：避免同时写
-        - 写前重读：避免丢更新（lost update）
-        - 临时文件 + os.replace：原子替换，避免写坏 JSON
-        """
-        # lock 文件与 json 同目录，名字固定，所有进程争抢同一个锁
-        lock_path = str(self.finished_keywords_file) + ".lock"
-        Path(lock_path).parent.mkdir(parents=True, exist_ok=True)
+        """保存已完成的关键字到Redis"""
+        with self.lock:
+            try:
+                if mark_finished_bing(keyword):
+                    self.finished_keywords.add(keyword)
+                    logging.info(f"✓ 已保存完成的关键字: {keyword}")
+            except Exception as e:
+                logging.error(f" 保存Redis已完成关键字失败: {keyword} -> {e}")
 
-        try:
-            # timeout: 等待锁的最长秒数（按你任务实际情况可调大些）
-            with portalocker.Lock(lock_path, timeout=30):
-
-                # 1) 写入前重读最新 finished 文件（关键：防止覆盖别人刚写的）
-                finished = set()
-                if self.finished_keywords_file.exists():
-                    try:
-                        with open(self.finished_keywords_file, "r", encoding="utf-8") as f:
-                            finished = set(json.load(f).get("finished_keywords", []))
-                    except Exception:
-                        # 读失败（可能文件刚好被替换、或历史写坏），就当空集合重新构建
-                        finished = set()
-
-                # 2) 更新集合
-                finished.add(keyword)
-
-                # 3) 写入临时文件
-                tmp_path = str(self.finished_keywords_file) + ".tmp"
-                with open(tmp_path, "w", encoding="utf-8") as f:
-                    json.dump({"finished_keywords": sorted(finished)}, f, ensure_ascii=False, indent=2)
-                    f.flush()
-                    os.fsync(f.fileno())  # 强制落盘，降低断电/崩溃造成空文件概率
-
-                # 4) 原子替换（同一磁盘分区内是原子的）
-                os.replace(tmp_path, self.finished_keywords_file)
-
-                # 5) 同步内存（仅本进程）
-                with self.lock:
-                    self.finished_keywords = finished
-
-        except portalocker.exceptions.LockException as e:
-            logging.error(f"❌ finished 文件加锁失败(超时/异常)：{e}")
-        except Exception as e:
-            logging.error(f"❌ finished 写入异常：{e}")
+    def add_finished_keyword(self, keyword: str):
+        """添加已完成的关键字到内存集合（不保存文件）"""
+        with self.lock:
+            self.finished_keywords.add(keyword)
+            logging.debug(f"✓ 已标记关键字为完成: {keyword} (总数: {len(self.finished_keywords)})")
 
     def is_keyword_finished(self, keyword: str) -> bool:
-        now = time.time()
-        if now - getattr(self, "_finished_last_reload_ts", 0) > getattr(self, "_finished_reload_interval", 10):
-            self.finished_keywords = self.load_finished_keywords()
-            self._finished_last_reload_ts = now
-        return keyword in self.finished_keywords
+        """检查关键字是否已完成"""
+        try:
+            return is_finished_bing(keyword)
+        except Exception:
+            return keyword in self.finished_keywords
 
     def is_allowed_file_type(self, file_path: str) -> bool:
+        """检查文件类型是否在允许的扩展名列表中"""
         if not self.allowed_extensions:
-            return True
-        return Path(file_path).suffix.lower() in self.allowed_extensions
+            return True  # 如果没有限制，允许所有类型
+
+        try:
+            # 从文件路径提取扩展名
+            file_path_obj = Path(file_path)
+            file_ext = file_path_obj.suffix.lower()
+
+            return file_ext in self.allowed_extensions
+        except Exception as e:
+            logging.debug(f"检查文件类型失败: {e}")
+            return False
 
     def extract_real_download_url_with_requests(self, session, download_link: str) -> str:
-        if "www.bing.com/ck" in download_link:
+        """使用requests处理Bing跳转链接，提取真实下载地址"""
+        if "www.bing.com/ck" in download_link:  # 检测是否为Bing跳转链接
+            logging.debug(f"检测到Bing跳转链接，开始提取真实下载地址: {download_link}")
             try:
-                resp = session.get(download_link, timeout=(5, 10), allow_redirects=True)
-                match = re.search(r'var\s+u\s*=\s*"([^"]+)"', resp.text)
-                if match:
-                    return match.group(1)
-            except Exception:
-                pass
-        return download_link
+                # 请求Bing跳转页面
+                redirect_resp = session.get(
+                    download_link,
+                    timeout=(5, 15),  # 连接超时5s，读取超时15s
+                    allow_redirects=True
+                )
+                redirect_resp.raise_for_status()
 
-    def process_single_result(self, result: Dict) -> Optional[Dict]:
-        url = result['srcUrl']
-        with self.lock:
-            if url in self.seen_urls or url in self.global_seen_urls:
-                return None
-            self.seen_urls.add(url)
+                # 用正则匹配页面中的真实下载地址
+                import re
+                match = re.search(r'var\s+u\s*=\s*"([^"]+)"', redirect_resp.text)
+                if not match:
+                    raise Exception("未在Bing跳转页面中匹配到真实下载地址")
 
-        try:
-            with requests.Session() as session:
-                session.headers.update({'User-Agent': 'Mozilla/5.0 ...'})
-                real_url = self.extract_real_download_url_with_requests(session, url)
+                # 提取真实下载地址
+                real_download_link = match.group(1)
+                logging.debug(f"成功提取真实下载地址: {real_download_link}")
+                return real_download_link
 
-            detect_text = (result.get('title', '') + " " + result.get('abstract', ''))
-            lang_folder_name = self.get_language_folder(detect_text)
-
-            lang_save_dir = self.download_dir / lang_folder_name
-            lang_save_dir.mkdir(parents=True, exist_ok=True)
-
-            temp_filename = f"temp_{int(time.time())}_{random.randint(1000, 9999)}"
-            ext = result['extend']['type']
-            if ext and not ext.startswith('.'):
-                ext = '.' + ext
-            temp_filename += ext if ext else ".unknown"
-
-            temp_save_path = lang_save_dir / temp_filename
-
-            if not download_file(real_url, str(temp_save_path)):
-                return None
-
-            # ============ ✅ 下载后处理（带MD5改名日志 + 不残留temp） ============
-            logging.info(f"📥 下载落盘完成(temp)：{temp_save_path}")
-
-            if not self.is_allowed_file_type(str(temp_save_path)):
-                logging.info(f"🗑️ 非允许后缀，删除：{temp_save_path.name}")
-                if temp_save_path.exists():
-                    temp_save_path.unlink()
-                return None
-
-            md5_hash = calculate_md5(str(temp_save_path))
-            logging.info(f"🔑 计算MD5：{temp_save_path.name} -> {md5_hash}")
-
-            if not md5_hash:
-                logging.warning(f"⚠️ MD5为空，删除temp：{temp_save_path}")
-                if temp_save_path.exists():
-                    temp_save_path.unlink()
-                return None
-
-            if self.is_md5_hash_exists(md5_hash):
-                logging.info(f"🔁 MD5已存在(去重命中)：{md5_hash}，删除temp：{temp_save_path}")
-                if temp_save_path.exists():
-                    temp_save_path.unlink()
-                return None
-
-            final_filename = generate_filename_from_md5(md5_hash, result['extend']['type'])
-            final_save_path = lang_save_dir / final_filename
-
-            logging.info(f"🧾 生成最终文件名：{final_filename}")
-            logging.info(f"➡️ 准备改名：{temp_save_path} -> {final_save_path} | 目标是否存在={final_save_path.exists()}")
-
-            if final_save_path.exists():
-                logging.info(f"📌 目标已存在，删除temp并跳过：{final_save_path}")
-                if temp_save_path.exists():
-                    temp_save_path.unlink()
-                with self.lock:
-                    self.seen_md5_hashes.add(md5_hash.lower())
-                return None
-
-            try:
-                if temp_save_path.exists():
-                    os.replace(str(temp_save_path), str(final_save_path))
-                logging.info(f"✅ 改名完成(MD5)：{final_save_path}")
             except Exception as e:
-                logging.error(f"❌ 改名失败：{temp_save_path} -> {final_save_path} | {e}")
-                if temp_save_path.exists():
-                    temp_save_path.unlink()
-                return None
+                logging.warning(f"Bing跳转链接处理失败，使用原链接: {str(e)}")
+                return download_link
 
-            with self.lock:
-                self.seen_md5_hashes.add(md5_hash.lower())
+        return download_link  # 如果不是Bing跳转链接，直接返回原链接
 
-            result['hash'] = md5_hash
-            result['localPath'] = str(final_save_path)
-            result['extend']['language'] = lang_folder_name
-            return result
-            # ================================================================
+    def process_single_result(self, result: Dict, download_dir: Path) -> Optional[Dict]:
+        """处理单个搜索结果：提取真实下载链接并下载文件"""
+        url = result['srcUrl']
 
-        except Exception as e:
-            logging.error(f"处理结果出错 {url}: {e}")
+        lang = result.get('extend', {}).get('language', '未知')
+        if not is_new_bing_url(lang, url):
+            logging.info(f"URL已处理过，跳过: {url}")
             return None
 
-    def _is_browser_alive(self, page) -> bool:
-        if not page:
-            return False
         try:
-            _ = page.url
-            return True
-        except (PageDisconnectedError, BrowserConnectError, Exception):
-            return False
+            # 使用requests session处理跳转链接，获取真实下载地址
+            with requests.Session() as session:
+                session.headers.update({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
+                })
 
-    def process_all_keywords_with_single_browser(self, pending_items: List, type_: str, time_: str):
-        page = None
-        processed_count = 0
-        searchbox_not_found_count = 0
+                # 处理Bing跳转链接，获取真实下载地址
+                real_url = self.extract_real_download_url_with_requests(session, url)
 
-        try:
-            for item_idx, (idx, item) in enumerate(pending_items):
-                STATE["current_keyword"] = self.choose_keyword(item)
+            # 生成临时文件名用于下载
+            temp_filename = f"temp_{int(time.time())}_{random.randint(1000, 9999)}"
+            if result['extend']['type']:
+                ext = result['extend']['type'] if result['extend']['type'].startswith(
+                    '.') else f".{result['extend']['type']}"
+                temp_filename += ext
+            else:
+                # 尝试从URL提取扩展名
+                parsed = urlparse(real_url)
+                path = parsed.path
+                if '.' in path:
+                    ext = '.' + path.split('.')[-1].lower()
+                    temp_filename += ext
 
-                if page and not self._is_browser_alive(page):
-                    err_msg = "❌ 检测到浏览器连接断开，程序停止。"
-                    logging.critical(err_msg)
-                    send_formatted_wps_msg("浏览器断开", level="error", extra_text=err_msg)
-                    return
+            temp_save_path = download_dir / temp_filename
 
-                need_restart = (page is None) or \
-                               ((processed_count % CrawlerConfig.BROWSER_RESTART_INTERVAL == 0 and processed_count > 0)
-                                ) or (searchbox_not_found_count >= CrawlerConfig.MAX_SEARCHBOX_NOT_FOUND)
+            # 下载文件到临时路径
+            if download_file(real_url, str(temp_save_path)):
+                # 检查文件类型是否符合要求
+                if not self.is_allowed_file_type(str(temp_save_path)):
+                    logging.warning(f"文件类型不符合要求，删除文件: {temp_save_path}")
+                    if temp_save_path.exists():
+                        temp_save_path.unlink()
+                    return None  # 不返回结果，不写入JSONL记录
 
-                if need_restart:
-                    if page:
-                        try:
-                            page.quit()
-                            time.sleep(2)
-                        except Exception:
-                            pass
+                # 计算MD5
+                md5_hash = calculate_md5(str(temp_save_path))
+                if md5_hash:
+                    md5_hash = md5_hash.lower()
 
-                    if searchbox_not_found_count >= CrawlerConfig.MAX_SEARCHBOX_NOT_FOUND:
-                        send_formatted_wps_msg(
-                            "浏览器连续异常",
-                            level="warning",
-                            extra_text=f"连续 {searchbox_not_found_count} 次找不到搜索框，已尝试重启。"
-                        )
-
-                    searchbox_not_found_count = 0
-                    logging.info(f"🔄 正在启动浏览器 (批次 {(processed_count // 20) + 1})...")
+                    # 使用 Redis 全局 MD5 去重
+                    if not claim_bing_md5(md5_hash):
+                        logging.info(f"MD5已存在（Redis去重），跳过重复下载和记录: MD5={md5_hash}")
+                        # 删除临时文件
+                        if temp_save_path.exists():
+                            temp_save_path.unlink()
+                        return None  # 不返回结果，不写入JSONL记录
 
                     try:
-                        page = create_browser_page(
-                            config_name='fast_search' if CrawlerConfig.CHROMIUM_HEADLESS else 'visible_search',
-                            headless=CrawlerConfig.CHROMIUM_HEADLESS,
-                            enable_proxy=False
-                        )
-                        if not initialize_browser_for_search(page, CrawlerConfig.BROWSER_INIT_URL):
-                            send_formatted_wps_msg("浏览器初始化失败", level="error", extra_text="无法打开初始页面")
-                            return
+                        # 使用MD5值生成最终文件名
+                        final_filename = generate_filename_from_md5(md5_hash, result['extend']['type'])
+                        final_save_path = download_dir / final_filename
+
+                        # 重命名文件
+                        os.replace(str(temp_save_path), str(final_save_path))
+                    except Exception:
+                        rollback_bing_md5(md5_hash)
+                        raise
+
+                    result['hash'] = md5_hash
+                    logging.info(f"文件处理完成: {final_filename} (MD5: {md5_hash})")
+                    return result
+                else:
+                    logging.warning(f"计算MD5失败，删除临时文件: {temp_filename}")
+                    if temp_save_path.exists():
+                        temp_save_path.unlink()
+                    result['hash'] = ""
+                    return result
+            else:
+                logging.error(f"下载失败，跳过: {real_url}")
+                return None
+
+        except Exception as e:
+            logging.error(f"处理结果时出错 {url}: {e}")
+            return None
+
+    def process_keyword_item(self, item: Dict, idx: int, type_: str, time_: str):
+        """处理单个关键词项目"""
+        keyword = self.choose_keyword(item)
+        if not keyword:
+            logging.info(f"条目 {idx} 中未找到可搜索的关键字，跳过。")
+            return
+
+        # 检查关键字是否已完成
+        if self.is_keyword_finished(keyword):
+            logging.info(f"[线程] 关键词 {keyword} 已处理过，跳过。")
+            return
+
+        logging.info(f" [关键字 {idx}] 开始处理：{keyword}")
+        logging.info(f" [关键字 {idx}] 即将打开浏览器窗口进行搜索...")
+
+        try:
+            # 搜索获取结果（使用单个浏览器窗口）
+            search_results = search_keyword(
+                keyword=keyword,
+                type_=type_,
+                time_=time_,
+                language_model=self.language_model,
+                max_pages=CrawlerConfig.MAX_PAGES_PER_KEYWORD,
+                init_url=CrawlerConfig.BROWSER_INIT_URL,
+                headless=CrawlerConfig.CHROMIUM_HEADLESS
+            )
+            if not search_results:
+                # logging.warning(f" [Keyword {idx}] {keyword} found no results")
+                self.save_finished_keyword(keyword)
+                # logging.info(f" [Keyword {idx}] no results, marked in Redis finished")
+                return
+
+            logging.info(f" [关键字 {idx}] {keyword} 找到 {len(search_results)} 个结果")
+            logging.info(f" [关键字 {idx}] 开始使用 {CrawlerConfig.DOWNLOAD_WORKERS} 个线程并发下载...")
+
+            # 并发下载和处理文件
+            download_futures = []
+            with ThreadPoolExecutor(max_workers=CrawlerConfig.DOWNLOAD_WORKERS) as download_executor:  # 下载线程池
+                for result in search_results:
+                    future = download_executor.submit(
+                        self.process_single_result,
+                        result,
+                        self.download_dir
+                    )
+                    download_futures.append(future)
+
+                # 处理下载结果
+                success_count = 0
+                for future in as_completed(download_futures):
+                    try:
+                        processed_result = future.result()
+                        if processed_result:
+                            lang = processed_result.get('extend', {}).get('language', '未知')
+                            push_result_line_bing(lang, processed_result)
+                            success_count += 1
+                        # 下载失败或MD5重复的不写入记录
                     except Exception as e:
-                        logging.error(f"浏览器启动失败: {e}")
+                        logging.error(f"处理下载结果时出错: {e}")
+
+            # 只有搜索到内容时才标记关键字为已完成并保存到文件
+            self.save_finished_keyword(keyword)
+            logging.info(f" [关键字 {idx}] {keyword} 处理完成！")
+            logging.info(f"📊 [关键字 {idx}] 成功下载 {success_count} 个文件")
+            logging.info(f" [关键字 {idx}] 已保存到 Redis finished 集合")
+
+        except Exception as e:
+            logging.error(f" [关键字 {idx}] 处理关键词 {keyword} 时出错：{e}")
+            # 发生错误时也保存关键字，避免无限重试
+            self.save_finished_keyword(keyword)
+            logging.info(f" [关键字 {idx}] 出错已保存到Redis finished集合（避免重试）")
+
+    def process_incomplete_downloads(self):
+        """Redis模式下不再需要本地JSONL补偿流程。"""
+        # logging.info("Redis模式已启用，跳过本地JSONL未完成补偿流程")
+
+    def process_all_keywords_with_single_browser(self, pending_items: List, type_: str, time_: str):
+        """使用单个浏览器窗口处理所有关键词（每20个关键字重启一次浏览器）"""
+        from utils.search_utils import create_browser_page, search_keyword_with_existing_page, \
+            initialize_browser_for_search, SearchBoxNotFoundException
+
+        page = None
+        processed_count = 0  # 已处理的关键字计数器
+        restart_interval = CrawlerConfig.BROWSER_RESTART_INTERVAL  # 重启间隔
+        searchbox_not_found_count = 0  # 连续搜索框未找到次数
+        max_searchbox_failures = CrawlerConfig.MAX_SEARCHBOX_NOT_FOUND  # 最大连续失败次数
+
+        try:
+            # 逐个处理关键词
+            for item_idx, (idx, item) in enumerate(pending_items):
+                # 检查是否需要重启浏览器（定期重启 或 搜索框连续失败）
+                need_restart = (processed_count % restart_interval == 0) or (
+                            searchbox_not_found_count >= max_searchbox_failures)
+
+                if need_restart:
+                    # 关闭旧浏览器（如果存在）
+                    if page:
+                        try:
+                            if searchbox_not_found_count >= max_searchbox_failures:
+                                logging.warning(f" 连续 {searchbox_not_found_count} 次未找到搜索框，强制重启浏览器！")
+                            else:
+                                logging.info(f" 已处理 {processed_count} 个关键字，正在关闭浏览器准备重启...")
+                            page.quit()
+                            logging.info(" 浏览器已关闭")
+                            time.sleep(2)  # 等待浏览器完全关闭
+                        except Exception as e:
+                            logging.warning(f" 关闭浏览器时出错: {e}")
+
+                    # 重置搜索框未找到计数器
+                    searchbox_not_found_count = 0
+
+                    # 创建新浏览器页面
+                    batch_num = (processed_count // restart_interval) + 1
+                    logging.info(f" 创建新浏览器窗口 (批次 {batch_num})...")
+                    page = create_browser_page(
+                        config_name='fast_search' if CrawlerConfig.CHROMIUM_HEADLESS else 'visible_search',
+                        headless=CrawlerConfig.CHROMIUM_HEADLESS,
+                        enable_proxy=False
+                    )
+
+                    # 初始化浏览器
+                    if not initialize_browser_for_search(page, CrawlerConfig.BROWSER_INIT_URL):
+                        logging.error(" 浏览器初始化失败")
                         return
 
-                keyword = STATE["current_keyword"]
-                if not keyword or self.is_keyword_finished(keyword):
+                    logging.info(" 浏览器初始化完成，开始搜索关键词...")
+
+                keyword = self.choose_keyword(item)
+                if not keyword:
+                    logging.info(f"条目 {idx} 中未找到可搜索的关键字，跳过。")
+                    continue
+                self.current_keyword = keyword
+
+                # 检查关键字是否已完成
+                if self.is_keyword_finished(keyword):
+                    logging.info(f"[关键字 {idx}] {keyword} 已处理过，跳过。")
                     continue
 
                 try:
-                    logging.info(f"🎯 [KWD-{idx}] 搜索: {keyword}")
+                    logging.info(
+                        f" [关键字 {idx}] 开始搜索：{keyword} (本批次第 {processed_count % restart_interval + 1}/{restart_interval} 个)")
+
+                    # 使用现有浏览器页面搜索
                     search_results = search_keyword_with_existing_page(
-                        page=page, keyword=keyword, type_=type_, time_=time_,
+                        page=page,
+                        keyword=keyword,
+                        type_=type_,
+                        time_=time_,
                         language_model=self.language_model,
                         max_pages=CrawlerConfig.MAX_PAGES_PER_KEYWORD
                     )
+
+                    # 搜索成功，重置搜索框未找到计数器
                     searchbox_not_found_count = 0
 
-                    if search_results:
-                        logging.info(f"📥 [KWD-{idx}] 找到 {len(search_results)} 个结果")
-                        if CrawlerConfig.SEARCH_DOWNLOAD_PARALLEL:
-                            for result in search_results:
-                                self.add_download_task(result, keyword, idx)
+                    if not search_results:
+                        logging.warning(f" [Keyword {idx}] {keyword} found no results")
+                        self.save_finished_keyword(keyword)
+                        logging.info(f" [Keyword {idx}] no results, marked in Redis finished")
+                        processed_count += 1  # Count this keyword even if empty.
+                        continue
 
+                    logging.info(f" [关键字 {idx}] {keyword} 找到 {len(search_results)} 个结果")
+
+                    # 添加下载任务
+                    if CrawlerConfig.SEARCH_DOWNLOAD_PARALLEL:
+                        logging.info(f" [关键字 {idx}] 添加 {len(search_results)} 个下载任务...")
+                        for result in search_results:
+                            self.add_download_task(result, keyword, idx)
+
+                    # 标记关键字为已完成
                     self.save_finished_keyword(keyword)
-                    processed_count += 1
-                    logging.info(f"🎉 关键词 '{keyword}' 搜索完成")
+                    logging.info(f" [关键字 {idx}] {keyword} 已标记完成")
 
-                except (PageDisconnectedError, BrowserConnectError):
-                    logging.critical("❌ 浏览器连接断开，停止运行。")
-                    send_formatted_wps_msg("浏览器断开", level="error", extra_text=f"关键词 {keyword} 时断开")
-                    return
+                    processed_count += 1  # 成功处理后计数
 
-                except SearchBoxNotFoundException:
+                except SearchBoxNotFoundException as e:
+                    # 搜索框未找到，增加计数器
                     searchbox_not_found_count += 1
-                    logging.error(f"❌ [KWD-{idx}] 未找到搜索框")
-                    if searchbox_not_found_count == 1:
-                        send_formatted_wps_msg(
-                            "验证码警告",
-                            level="warning",
-                            fields={"关键词": keyword},
-                            extra_text="未找到搜索框，可能需要验证码。"
-                        )
+                    logging.error(
+                        f" [关键字 {idx}] 未找到搜索框 (连续 {searchbox_not_found_count}/{max_searchbox_failures} 次): {keyword}")
+
+                    # 不保存关键字，允许重启后重试
+                    # 不增加processed_count，这样下次循环会触发重启检查
+                    if searchbox_not_found_count >= max_searchbox_failures:
+                        logging.warning(f" 将在下次循环强制重启浏览器...")
                     continue
 
                 except Exception as e:
-                    logging.error(f"❌ [KWD-{idx}] 异常: {e}")
+                    logging.error(f" [关键字 {idx}] 处理关键词 {keyword} 时出错：{e}")
+                    # 发生其他错误时保存关键字，避免无限重试
                     self.save_finished_keyword(keyword)
-                    processed_count += 1
+                    processed_count += 1  # 出错也计数
+                    # 重置搜索框未找到计数器（因为这是其他类型的错误）
+                    searchbox_not_found_count = 0
                     continue
 
-                time.sleep(1.5)
+                # 关键词间短暂延时
+                time.sleep(1)
 
-        except KeyboardInterrupt:
-            logging.warning("用户手动停止，正在等待主循环处理...")
-            raise
         finally:
+            # 最后关闭浏览器
             if page:
                 try:
+                    logging.info(" 关闭浏览器窗口...")
                     page.quit()
-                except Exception:
-                    pass
+                    logging.info(" 浏览器窗口已关闭")
+                except Exception as e:
+                    logging.warning(f" 关闭浏览器时出错: {e}")
 
     def run(self, json_file_path: str, type_: str, time_: str):
+        """主运行函数"""
+        json_file_path = os.path.abspath(json_file_path)
         start_dt = datetime.now()
-        current_script_path = os.path.abspath(__file__)
+        script_name = os.path.basename(__file__)
         exit_reason = "正常结束"
-        error_detail = ""
+        run_config = {"keyword_path": json_file_path}
 
-        global CURRENT_KEYWORD_FILE, CURRENT_SCRIPT_PATH, CURRENT_FINISHED_FILE, CURRENT_JSONL_FILENAME
-        CURRENT_KEYWORD_FILE = json_file_path
-        CURRENT_SCRIPT_PATH = current_script_path
-        CURRENT_JSONL_FILENAME = self.jsonl_file.name
-        self.finished_keywords_file = build_finished_json_path(str(self.base_dir), json_file_path)
-        CURRENT_FINISHED_FILE = str(self.finished_keywords_file)
+        progress_stop_event = threading.Event()
+        progress_thread = None
+        data = []
+        all_keywords = []
+
+        def progress_done_count() -> int:
+            return sum(1 for kw in all_keywords if kw and self.is_keyword_finished(kw))
 
         try:
-            if not os.path.exists(json_file_path):
-                raise FileNotFoundError("文件不存在")
-            with open(json_file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-
-            self.finished_keywords = self.load_finished_keywords()
-
-            pending = []
-            for idx, item in enumerate(data, start=1):
-                keyword = self.choose_keyword(item)
-                if keyword and not self.is_keyword_finished(keyword):
-                    pending.append((idx, item))
-
-            send_formatted_wps_msg(
-                "任务开始 (Bing1)",
-                level="start",
-                fields={"关键词总数": f"{len(data)}", "待处理": f"{len(pending)}"},
-                throttle_key="start"
-            )
-
             if CrawlerConfig.SEARCH_DOWNLOAD_PARALLEL:
                 self.start_download_executor()
 
-            logging.info(f"📊 任务统计: 总数 {len(data)} | 待办 {len(pending)}")
+            self.process_incomplete_downloads()
+            self.finished_keywords = self.load_finished_keywords()
+            # logging.info(f" 重新加载已搜索关键字: {len(self.finished_keywords)} 个")
 
-            if pending:
-                self.process_all_keywords_with_single_browser(pending, type_, time_)
-            else:
-                logging.info("🎉 所有关键词已完成")
+            if not os.path.exists(json_file_path):
+                logging.error(f"输入文件 {json_file_path} 不存在！")
+                return
+
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if not isinstance(data, list):
+                    logging.error("输入JSON文件格式错误，期望为数组格式。")
+                    return
+
+            all_keywords = [self.choose_keyword(item) for item in data if self.choose_keyword(item)]
+
+            pending_items = []
+            for idx, item in enumerate(data, start=1):
+                keyword = self.choose_keyword(item)
+                if keyword and not self.is_keyword_finished(keyword):
+                    pending_items.append((idx, item))
+
+            logging.info(
+                f"总共 {len(data)} 个关键词，其中 {len(pending_items)} 个待处理，{len(data) - len(pending_items)} 个已完成")
+
+            notify_event(
+                "程序启动：Crawler开始运行",
+                start_dt,
+                run_config,
+                extra=f"{progress_done_count()}/{len(all_keywords)}",
+                throttle_key="startup",
+                error_detail="关键词已加载，准备开始爬取",
+                script_name=script_name,
+            )
+
+            def progress_report_worker():
+                while not progress_stop_event.wait(PROGRESS_REPORT_INTERVAL_SECONDS):
+                    notify_event(
+                        "定时进度汇报（30分钟）",
+                        start_dt,
+                        run_config,
+                        extra=f"{progress_done_count()}/{len(all_keywords)} | 当前关键词: {self.current_keyword or ''}",
+                        throttle_key="progress_30m",
+                        error_detail="程序仍在运行中",
+                        script_name=script_name,
+                    )
+
+            progress_thread = threading.Thread(target=progress_report_worker, daemon=True)
+            progress_thread.start()
+
+            if not pending_items:
+                logging.info("所有关键词都已处理完成，无需重复执行！")
+                return
+
+            logging.info(f" 开始处理 {len(pending_items)} 个待处理关键词")
+            self.process_all_keywords_with_single_browser(pending_items, type_, time_)
+            logging.info(" 所有关键词搜索完成！")
 
         except KeyboardInterrupt:
             exit_reason = "用户手动停止"
-            logging.warning("\n🛑 接收到停止指令，正在生成最终报告...")
-
+            logging.warning("检测到手动中断，准备退出...")
+        except json.JSONDecodeError as e:
+            exit_reason = "异常退出"
+            logging.error(f"解析JSON文件 {json_file_path} 时出错: {e}")
+            notify_event(
+                "严重异常：未处理Exception",
+                start_dt,
+                run_config,
+                extra=f"当前关键词: {self.current_keyword or ''} | {progress_done_count()}/{len(all_keywords)}",
+                throttle_key="fatal_exception",
+                error_detail=str(e),
+                script_name=script_name,
+            )
         except Exception as e:
             exit_reason = "异常退出"
-            error_detail = traceback.format_exc()
-            logging.critical(f"程序崩溃: {e}")
-
+            logging.error(f"程序异常终止: {e}")
+            notify_event(
+                "严重异常：未处理Exception",
+                start_dt,
+                run_config,
+                extra=f"当前关键词: {self.current_keyword or ''} | {progress_done_count()}/{len(all_keywords)}",
+                throttle_key="fatal_exception",
+                error_detail=str(e),
+                script_name=script_name,
+            )
         finally:
+            progress_stop_event.set()
+            if progress_thread:
+                progress_thread.join(timeout=1)
+
             if CrawlerConfig.SEARCH_DOWNLOAD_PARALLEL:
                 self.stop_download_executor()
 
+            final_count = progress_done_count() if all_keywords else finished_count_bing()
+            logging.info(f"最终统计: 共完成 {final_count} 个关键字")
+            logging.info("结果已写入 Redis results 队列（按语种分桶）")
+            logging.info("所有任务（搜索+下载）完全完成！")
+
             end_dt = datetime.now()
-            cost = end_dt - start_dt
-
-            level_map = {"正常结束": "success", "用户手动停止": "stop", "异常退出": "error"}
-            level = level_map.get(exit_reason, "info")
-
-            fields = {
-                "结束时间": end_dt.strftime("%H:%M:%S"),
-                "总耗时": str(cost).split('.')[0],
-                "退出原因": exit_reason,
-                "本次成功下载": str(STATE["success_count"]),
-                "执行脚本": os.path.basename(current_script_path)
-            }
-
-            if exit_reason != "正常结束":
-                fields["最后关键词"] = STATE.get("current_keyword", "未知")
-
-            if exit_reason == "异常退出":
-                fields["错误摘要"] = get_error_context(Exception("异常退出"))
-
-            ok = send_formatted_wps_msg(
-                "任务结束 (Bing1)",
-                level=level,
-                fields=fields,
-                extra_text=error_detail,
-                throttle_key="final"
+            final_msg = (
+                "【Crawler运行结束】\n\n"
+                f"结束原因: {exit_reason}\n"
+                f"进度: {final_count}/{len(all_keywords)}\n"
+                f"开始时间: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"结束时间: {end_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
+                f"运行脚本: {script_name}\n"
+                f"关键词文件: {json_file_path}"
             )
+            send_wps_robot(final_msg, throttle_key="final")
 
-            if ok:
-                logger.info("WPS通知发送成功")
-            else:
-                logger.warning("WPS通知发送失败")
-
-            logging.info("🏁 程序结束")
-
-            # if len(pending)!=0:
-            #     try:
-            #         hello_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hello.py")
-            #         subprocess.Popen([sys.executable, hello_path], cwd=os.path.dirname(hello_path))
-            #         logging.info(f"🚀 已启动 hello.py: {hello_path}")
-            #     except Exception as e:
-            #         logging.error(f"❌ 启动 hello.py 失败: {e}")
+            run_result = {
+                "json_path": json_file_path,
+                "exit_reason": exit_reason,
+                "done": final_count,
+                "total": len(all_keywords),
+                "start_time": start_dt.strftime('%Y-%m-%d %H:%M:%S'),
+                "end_time": end_dt.strftime('%Y-%m-%d %H:%M:%S'),
+            }
+            print(f"RUN_RESULT_JSON:{json.dumps(run_result, ensure_ascii=False)}", flush=True)
 
 
+# ---------- 脚本主入口 ----------
 if __name__ == '__main__':
-    base_directory = r"D:\数据采集\data\bing"
-    json_input_file = r"E:\Crawler\模糊搜索\模糊搜索\json\output\德语\心理学P.json"
-    file_type = 'xlsx'
+    # 配置参数
+    base_directory = r"E:\采集中\bing"  # 基础目录
+    json_input_file = r"D:\code_Python\Vague-Search\模糊搜索\json\output\葡萄牙语\人文地理.json" 
+    if not json_input_file.strip():
+        raise SystemExit("请先在脚本中设置 json_input_file，不支持命令行参数覆盖。")
+    json_input_file = os.path.abspath(json_input_file)
+    file_type = 'xlsx'  # 搜索的文件类型
+    time_filter = ''  # 时间过滤条件（空字符串表示不限制）
+    max_concurrent_workers = CrawlerConfig.DEFAULT_MAX_WORKERS  # 最大并发线程数
 
-    crawler = DrissionPageCrawlerManager(
-        base_dir=base_directory,
-        max_workers=1,
-        fasttext_model_path=r"lid.176.bin",
-        allowed_extensions=['xlsx', 'xls', 'xlsb', 'xlsm'],
-        json_input_file=json_input_file
-    )
-    crawler.run(json_input_file, file_type, '')
+    allowed_extensions = ['xlsx', 'xls', 'ett', 'et', 'xlsb','xlsm']
+    fasttext_model_path = r"lid.176.bin"
+
+    # Redis 连接检测
+    try:
+        rds.ping()
+        logging.info(f"Redis连接成功: {REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
+    except Exception as e:
+        logging.error(f"Redis连接失败: {REDIS_HOST}:{REDIS_PORT}/{REDIS_DB} -> {e}")
+        raise SystemExit(1)
+
+    # 创建爬虫管理器并运行
+    crawler = DrissionPageCrawlerManager(base_directory, max_concurrent_workers, fasttext_model_path,allowed_extensions)
+    crawler.run(json_input_file, file_type, time_filter)

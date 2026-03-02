@@ -27,7 +27,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 try:
-    from wps推送.wps_push import send_wps_robot, notify_event
+    from utils.wps推送.wps_push import send_wps_robot, notify_event
 except Exception:
     def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
         return False
@@ -45,9 +45,9 @@ except Exception:
         return False
 
 # -------------------------- 全局配置参数 --------------------------
-path = r"D:\采集中\google"
+path = r"E:\采集中\google"
 BASE_XLSX_DIR = os.path.join(path, '样张文件')
-KEYWORD_PATH = r"E:\Crawler\模糊搜索\模糊搜索\json\output\德语\心理学D.json"
+KEYWORD_PATH = r"D:\code_Python\Vague-Search\模糊搜索\json\output\葡萄牙语\人文地理.json"
 PAGE_TIMEOUT = 40
 MAX_WORKERS = 8
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'
