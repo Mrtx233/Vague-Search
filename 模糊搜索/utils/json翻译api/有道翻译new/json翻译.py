@@ -40,6 +40,10 @@ LANG_NAME_MAP = {
     "ru": "俄语",
     "de": "德语",
     "ar": "阿拉伯语",
+    "th": "泰语",
+    "pl": "波兰语",
+    "id": "印度尼西亚语",
+    "tr": "土耳其语",
 }
 
 
@@ -59,6 +63,7 @@ def get_user_config():
     print("  zh-CHS(中文简体)  zh-CHT(中文繁体)  en(英语)  ja(日语)")
     print("  ko(韩语)  fr(法语)  es(西班牙语)  pt(葡萄牙语)")
     print("  it(意大利语)  ru(俄语)  de(德语)  ar(阿拉伯语)")
+    print("  th(泰语)  pl(波兰语)  id(印度尼西亚语)  tr(土耳其语)")
     config["target_language"] = input("\n请输入目标语种代码（例如：es 或 en）: ").strip()
 
     # 固定输出目录：output/语种中文名/

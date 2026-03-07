@@ -29,6 +29,10 @@ class YoudaoTranslator:
         ru: 俄语
         de: 德语
         ar: 阿拉伯语
+        th: 泰语
+        pl: 波兰语
+        id: 印度尼西亚语
+        tr: 土耳其语
         auto: 自动检测（仅用于源语言）
     """
     
@@ -121,8 +125,9 @@ class YoudaoTranslator:
             text: 要翻译的文本
             target_lang: 目标语言，默认为中文简体(zh-CHS)
                 可选值：zh-CHS(中文简体), zh-CHT(中文繁体), en(英语), ja(日语), 
-                       ko(韩语), fr(法语), es(西班牙语), pt(葡萄牙语), it(意大利语), 
-                       ru(俄语), de(德语), ar(阿拉伯语)等
+                ko(韩语), fr(法语), es(西班牙语), pt(葡萄牙语), it(意大利语), 
+                       ru(俄语), de(德语), ar(阿拉伯语), th(泰语), pl(波兰语),
+                       id(印度尼西亚语), tr(土耳其语)等
             source_lang: 源语言，默认为auto(自动检测)
         
         Returns:
