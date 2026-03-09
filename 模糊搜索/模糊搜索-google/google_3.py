@@ -185,7 +185,11 @@ def load_keywords_with_status(json_path: str) -> List[str]:
     try:
         with open(json_path, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
-            return [item['外文'] for item in data if '外文' in item]
+            return [
+                item["外文"]
+                for item in data
+                if isinstance(item.get("外文"), str) and item["外文"].strip()
+            ]
     except Exception as e:
         logger.error(f"关键词文件加载失败: {str(e)}")
         return []
@@ -498,7 +502,7 @@ async def process_keyword_async(
                 break
 
             page_num += 1
-            time.sleep(8)
+            time.sleep(5)
 
         except Exception as e:
             logger.error(f"第{page_num}页处理异常: {str(e)[:40]}，停止当前关键词")

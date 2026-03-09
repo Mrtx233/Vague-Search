@@ -680,7 +680,9 @@ class DrissionPageCrawlerManager:
                     logging.error("输入JSON文件格式错误，期望为数组格式。")
                     return
 
-            all_keywords = [self.choose_keyword(item) for item in data if self.choose_keyword(item)]
+            # 在加载阶段就过滤掉没有有效关键词（None / 空串）的条目
+            data = [item for item in data if self.choose_keyword(item)]
+            all_keywords = [self.choose_keyword(item) for item in data]
 
             pending_items = []
             for idx, item in enumerate(data, start=1):
