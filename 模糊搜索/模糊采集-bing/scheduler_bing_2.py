@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 # bing_2.py 在 stdout 打印运行结果时使用的前缀
 RUN_RESULT_PREFIX = "RUN_RESULT_JSON:"
 # 默认 json 文件夹（可按需修改）
-DEFAULT_JSON_DIR = r"E:\Crawler\模糊搜索\模糊搜索\json\output\俄语"
+DEFAULT_JSON_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\output\阿拉伯语"
 
 
 def list_json_files(json_dir: Path) -> List[Path]:

@@ -22,9 +22,27 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-try:
-    from utils.wps推送.wps_push import send_wps_robot, notify_event
-except Exception:
+# WPS 推送：从「模糊搜索/utils」显式加载，避免与本地 utils（search_utils 等）冲突
+def _load_wps_push():
+    try:
+        import importlib.util
+        _wps_path = os.path.join(PROJECT_ROOT, "utils", "wps推送", "wps_push.py")
+        if not os.path.isfile(_wps_path):
+            raise FileNotFoundError(f"wps_push 不存在: {_wps_path}")
+        spec = importlib.util.spec_from_file_location("wps_push", _wps_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.send_wps_robot, mod.notify_event
+    except Exception as e:
+        logging.warning("WPS 推送模块加载失败（将使用空实现）: %s", e)
+        return None, None
+
+_send_wps_robot, _notify_event = _load_wps_push()
+
+if _send_wps_robot is not None and _notify_event is not None:
+    send_wps_robot = _send_wps_robot
+    notify_event = _notify_event
+else:
     def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
         return False
 
