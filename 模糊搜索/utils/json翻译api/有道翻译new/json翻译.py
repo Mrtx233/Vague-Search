@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from youdao_api import YoudaoTranslator
 
 # -------------------------- 路径基准（绝对路径写死） --------------------------
-DEFAULT_INPUT_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\input\111"
+DEFAULT_INPUT_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\input"
 DEFAULT_OUTPUT_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\output"
 
 
@@ -135,9 +135,10 @@ def init_translate_api(js_path=None, proxy=None):
 
 # -------------------------- 4. 读取和保存JSON文件 --------------------------
 def read_json_file(file_path):
-    """读取JSON文件，返回数据列表"""
+    """读取JSON文件，返回数据列表（兼容 UTF-8 BOM）。"""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        # 使用 utf-8-sig 以兼容带 BOM 的 UTF-8 文件
+        with open(file_path, "r", encoding="utf-8-sig") as f:
             data = json.load(f)
 
         if not isinstance(data, list):
