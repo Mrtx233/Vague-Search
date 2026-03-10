@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 RUN_RESULT_PREFIX = "RUN_RESULT_JSON:"
-DEFAULT_JSON_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\output\阿拉伯语"
+DEFAULT_JSON_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\output\葡萄牙语"
 
 
 def list_json_files(json_dir: Path) -> List[Path]:

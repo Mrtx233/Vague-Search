@@ -706,7 +706,7 @@ class DrissionPageCrawlerManager:
             def progress_report_worker():
                 while not progress_stop_event.wait(PROGRESS_REPORT_INTERVAL_SECONDS):
                     notify_event(
-                        "定时进度汇报（30分钟）",
+                        "定时进度汇报_ml_bing1",
                         start_dt,
                         run_config,
                         extra=f"{progress_done_count()}/{len(all_keywords)} | 当前关键词: {self.current_keyword or ''}",
