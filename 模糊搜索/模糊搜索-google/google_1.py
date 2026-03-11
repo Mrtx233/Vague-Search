@@ -47,9 +47,9 @@ except Exception:
 # -------------------------- 全局配置参数 --------------------------
 path = r"E:\采集中\google"
 BASE_XLSX_DIR = os.path.join(path, '样张文件')
-KEYWORD_PATH = r"D:\code_Python\Vague-Search\模糊搜索\json\output\葡萄牙语\人文地理.json"
+KEYWORD_PATH = r"D:\code_Python\Vague-Search\模糊搜索\json\output\印度尼西亚语\IT_T.json"
 PAGE_TIMEOUT = 40
-MAX_WORKERS = 8
+MAX_WORKERS = 12  # 异步下载并发数（优化后）
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'
 URL_CLASS_CONFIG_PATH = 'url_class_keywords.json'
 
@@ -66,7 +66,16 @@ def rkey(kind: str, lang: str) -> str:
     return f"{REDIS_PREFIX}:{kind}:{lang}"
 
 
-rds = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+# 使用连接池优化 Redis 连接
+REDIS_MAX_CONNECTIONS = 50  # Redis连接池最大连接数
+REDIS_POOL = redis.ConnectionPool(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    db=REDIS_DB,
+    decode_responses=True,
+    max_connections=REDIS_MAX_CONNECTIONS
+)
+rds = redis.Redis(connection_pool=REDIS_POOL)
 
 
 # -------------------------- 工具函数 --------------------------
@@ -176,8 +185,8 @@ async def download_file_async(url: str, save_dir: str, file_type: str, max_retri
     temp_file = None
     for attempt in range(max_retries):
         try:
-            timeout = aiohttp.ClientTimeout(total=45, connect=10)
-            connector = aiohttp.TCPConnector(ssl=False, limit=150, limit_per_host=30)
+            timeout = aiohttp.ClientTimeout(total=30, connect=10)
+            connector = aiohttp.TCPConnector(ssl=False, limit=200, limit_per_host=50)
 
             os.makedirs(save_dir, exist_ok=True)
 
@@ -402,7 +411,7 @@ async def handle_download_task_async(
 def navigate_to_next_page(page: ChromiumPage) -> bool:
     try:
         next_btn = page.ele('xpath:(//td[@class="d6cvqb BBwThe"])[2]/A[1]')
-        time.sleep(2)
+        time.sleep(1)
         next_btn.click()
         logger.info("成功翻页")
         return True
@@ -427,7 +436,7 @@ async def process_keyword_async(
     while True:
         try:
             page.wait.load_start()
-            page.wait(2)
+            page.wait(1)
 
             result_items = parse_search_results(page, allowed_extensions)
             if not result_items:
@@ -449,7 +458,7 @@ async def process_keyword_async(
                 break
 
             page_num += 1
-            time.sleep(8)
+            time.sleep(3)
 
         except Exception as e:
             logger.error(f"第{page_num}页处理异常: {str(e)[:40]}，停止当前关键词")
@@ -519,6 +528,7 @@ if __name__ == '__main__':
     tab = None
     try:
         chrome_options = ChromiumOptions()
+        chrome_options.headless(True)  # 启用无头模式，提升性能
         chrome_options.set_user_agent(USER_AGENT)
         chrome_options.set_local_port(get_available_port())
 
@@ -602,7 +612,7 @@ if __name__ == '__main__':
             search_box = tab.ele('xpath://textarea[@name="q"]')
             search_box.click()
             search_box.clear()
-            time.sleep(0.3)
+            time.sleep(0.2)
 
             search_query = f'"{keyword}" filetype:{config["search_file_extension"]}'
             tab.wait(10)
@@ -620,7 +630,7 @@ if __name__ == '__main__':
             completed_count += 1
 
             clear_browser_data(tab)
-            time.sleep(random.uniform(1, 2))
+            time.sleep(random.uniform(0.5, 1))
 
     except KeyboardInterrupt:
         exit_reason = "用户手动停止"

@@ -1,4 +1,4 @@
-﻿import time
+import time
 import os
 import random
 import logging
@@ -22,9 +22,27 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-try:
-    from utils.wps推送.wps_push import send_wps_robot, notify_event
-except Exception:
+# WPS 推送：从「模糊搜索/utils」显式加载，避免与本地 utils（search_utils 等）冲突
+def _load_wps_push():
+    try:
+        import importlib.util
+        _wps_path = os.path.join(PROJECT_ROOT, "utils", "wps推送", "wps_push.py")
+        if not os.path.isfile(_wps_path):
+            raise FileNotFoundError(f"wps_push 不存在: {_wps_path}")
+        spec = importlib.util.spec_from_file_location("wps_push", _wps_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.send_wps_robot, mod.notify_event
+    except Exception as e:
+        logging.warning("WPS 推送模块加载失败（将使用空实现）: %s", e)
+        return None, None
+
+_send_wps_robot, _notify_event = _load_wps_push()
+
+if _send_wps_robot is not None and _notify_event is not None:
+    send_wps_robot = _send_wps_robot
+    notify_event = _notify_event
+else:
     def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
         return False
 
@@ -57,18 +75,15 @@ REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
 REDIS_DB = 0
 REDIS_PREFIX = "crawler"
-REDIS_MAX_CONNECTIONS = 50  # Redis连接池最大连接数
-PROGRESS_REPORT_INTERVAL_SECONDS = 1800
+PROGRESS_REPORT_INTERVAL_SECONDS = 3600
 
-# 使用连接池优化 Redis 连接
-REDIS_POOL = redis.ConnectionPool(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    db=REDIS_DB,
-    decode_responses=True,
-    max_connections=REDIS_MAX_CONNECTIONS
-)
-rds = redis.Redis(connection_pool=REDIS_POOL)
+rds = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+
+
+def resolve_json_input_file() -> str:
+    if len(sys.argv) > 1 and sys.argv[1].strip():
+        return os.path.abspath(sys.argv[1].strip())
+    raise SystemExit("请传入json文件绝对路径参数，例如: python bing_3.py E:\\path\\to\\xx.json")
 
 
 def finished_key_bing() -> str:
@@ -139,18 +154,18 @@ class CrawlerConfig:
     # 搜索配置
     MAX_PAGES_PER_KEYWORD = 15  # 每个关键词最大搜索页数
     BROWSER_INIT_URL = "https://cn.bing.com/search?q=科技"
-    BROWSER_RESTART_INTERVAL = 30  # 每搜索多少个关键字后重启浏览器（避免内存泄漏）
+    BROWSER_RESTART_INTERVAL = 50  # 每搜索多少个关键字后重启浏览器（避免内存泄漏）
     MAX_SEARCHBOX_NOT_FOUND = 5  # 连续未找到搜索框多少次后强制重启浏览器
 
     # Chromium配置（简化版）
     CHROMIUM_CONFIG_NAME = 'fast_search'  # Chromium配置方案
-    CHROMIUM_HEADLESS = True  # 无头模式设置
-    # False = 显示浏览器窗口（可以看到搜索过程，便于调试）
-    # True  = 无头模式（隐藏窗口，运行更快，推荐生产环境使用）
+    CHROMIUM_HEADLESS = False  # 无头模式设置
+    # False = 显示浏览器窗口（可以看到搜索过程，便于调试，推荐设置）
+    # True  = 无头模式（隐藏窗口，运行更快，但可能更容易出现元素识别问题）
 
     # 并发配置
     DEFAULT_MAX_WORKERS = 1  # 关键字处理并发数（使用单个浏览器窗口）
-    DOWNLOAD_WORKERS = 20  # 下载线程池大小（20个线程并发下载）
+    DOWNLOAD_WORKERS = 10  # 下载线程池大小（10个线程并发下载）
 
     # 搜索和下载并行配置
     SEARCH_DOWNLOAD_PARALLEL = True  # 搜索和下载是否并行执行
@@ -525,7 +540,7 @@ class DrissionPageCrawlerManager:
                                 logging.info(f" 已处理 {processed_count} 个关键字，正在关闭浏览器准备重启...")
                             page.quit()
                             logging.info(" 浏览器已关闭")
-                            time.sleep(1)  # 等待浏览器完全关闭
+                            time.sleep(2)  # 等待浏览器完全关闭
                         except Exception as e:
                             logging.warning(f" 关闭浏览器时出错: {e}")
 
@@ -619,7 +634,7 @@ class DrissionPageCrawlerManager:
                     continue
 
                 # 关键词间短暂延时
-                time.sleep(0.5)
+                time.sleep(1)
 
         finally:
             # 最后关闭浏览器
@@ -665,7 +680,9 @@ class DrissionPageCrawlerManager:
                     logging.error("输入JSON文件格式错误，期望为数组格式。")
                     return
 
-            all_keywords = [self.choose_keyword(item) for item in data if self.choose_keyword(item)]
+            # 在加载阶段就过滤掉没有有效关键词（None / 空串）的条目
+            data = [item for item in data if self.choose_keyword(item)]
+            all_keywords = [self.choose_keyword(item) for item in data]
 
             pending_items = []
             for idx, item in enumerate(data, start=1):
@@ -689,7 +706,7 @@ class DrissionPageCrawlerManager:
             def progress_report_worker():
                 while not progress_stop_event.wait(PROGRESS_REPORT_INTERVAL_SECONDS):
                     notify_event(
-                        "定时进度汇报（30分钟）",
+                        "定时进度汇报_ml_bing1",
                         start_dt,
                         run_config,
                         extra=f"{progress_done_count()}/{len(all_keywords)} | 当前关键词: {self.current_keyword or ''}",
@@ -775,11 +792,8 @@ class DrissionPageCrawlerManager:
 # ---------- 脚本主入口 ----------
 if __name__ == '__main__':
     # 配置参数
-    base_directory = r"E:\采集中\bing"  # 基础目录
-    json_input_file = r"D:\code_Python\Vague-Search\模糊搜索\json\output\印度尼西亚语\IT_A.json"
-    if not json_input_file.strip():
-        raise SystemExit("请先在脚本中设置 json_input_file，不支持命令行参数覆盖。")
-    json_input_file = os.path.abspath(json_input_file)
+    base_directory = r"D:\采集中\bing"  # 基础目录
+    json_input_file = resolve_json_input_file()  # 输入的关键词JSON文件（必须由参数传入）
     file_type = 'xlsx'  # 搜索的文件类型
     time_filter = ''  # 时间过滤条件（空字符串表示不限制）
     max_concurrent_workers = CrawlerConfig.DEFAULT_MAX_WORKERS  # 最大并发线程数

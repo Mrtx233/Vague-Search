@@ -288,7 +288,7 @@ def batch_process_files(source_dir, output_root, num_workers=NUM_WORKERS):
 
 if __name__ == "__main__":
     # 请根据实际情况修改下面两项路径
-    SOURCE_DIRECTORY = r"D:\数据采集\0213\常规\ET组件"  # 源文件目录
+    SOURCE_DIRECTORY = r"D:\data\数据采集\0227\常规2\ET组件"  # 源文件目录
     OUTPUT_ROOT = SOURCE_DIRECTORY  # 结果保存目录（也可以改为其它路径）
     NUM_WORKERS = 4
 
