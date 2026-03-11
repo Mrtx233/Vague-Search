@@ -75,7 +75,7 @@ def print_sample_folder_summary():
 
 if __name__ == "__main__":
     # 目标绝对路径（按需修改）
-    TARGET_ROOT_PATH = r"D:\数据采集\0227\常规2\ET组件"
+    TARGET_ROOT_PATH = r"D:\data\数据采集\0227\常规2\ET组件"
 
     # 根路径合法性校验
     if not os.path.exists(TARGET_ROOT_PATH):
