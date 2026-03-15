@@ -21,8 +21,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from youdao_api import YoudaoTranslator
 
 # -------------------------- 路径基准（绝对路径写死） --------------------------
-DEFAULT_INPUT_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\input"
-DEFAULT_OUTPUT_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\output"
+DEFAULT_INPUT_DIR = r"/模糊搜索/json/input"
+DEFAULT_OUTPUT_DIR = r"/模糊搜索/json/output"
 
 
 

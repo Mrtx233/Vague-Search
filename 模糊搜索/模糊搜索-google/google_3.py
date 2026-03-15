@@ -10,6 +10,8 @@ import json
 import random
 import hashlib
 import asyncio
+import importlib.util
+from pathlib import Path
 from typing import List, Tuple, Dict, Optional
 from datetime import datetime
 
@@ -27,43 +29,49 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-# WPS 推送：从「模糊搜索/utils」显式加载，避免与本地 utils（DomainClassifier 等）冲突
+
 def _load_wps_push():
+    """显式按文件路径加载 wps_push，避免包路径问题。"""
+    module_path = Path(PROJECT_ROOT) / "tools" / "wps_push_tool" / "wps_push.py"
+    if not module_path.exists():
+        return None
     try:
-        import importlib.util
-        _wps_path = os.path.join(PROJECT_ROOT, "utils", "wps推送", "wps_push.py")
-        if not os.path.isfile(_wps_path):
-            raise FileNotFoundError(f"wps_push 不存在: {_wps_path}")
-        spec = importlib.util.spec_from_file_location("wps_push", _wps_path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        return mod.send_wps_robot, mod.notify_event
-    except Exception as e:
-        logging.warning("WPS 推送模块加载失败（将使用空实现）: %s", e)
-        return None, None
+        spec = importlib.util.spec_from_file_location("wps_push_dynamic", module_path)
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return mod
+    except Exception:
+        return None
+    return None
 
-_send_wps_robot, _notify_event = _load_wps_push()
 
-if _send_wps_robot is not None and _notify_event is not None:
-    send_wps_robot = _send_wps_robot
-    notify_event = _notify_event
+_wps_mod = _load_wps_push()
+if _wps_mod:
+    send_wps_robot = _wps_mod.send_wps_robot
+    notify_event = _wps_mod.notify_event
+    get_device_name = _wps_mod.get_device_name
 else:
+    def get_device_name() -> str:
+        return "未知设备"
+
+
     def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
         return False
 
+
     def notify_event(
-        event_title: str,
-        start_dt: datetime,
-        config: Dict,
-        extra: str = "",
-        throttle_key: str = "event",
-        error_detail: str = "",
-        jsonl_filename: Optional[str] = None,
-        script_name: Optional[str] = None,
+            event_title: str,
+            start_dt: datetime,
+            config: Dict,
+            extra: str = "",
+            throttle_key: str = "event",
+            error_detail: str = "",
+            jsonl_filename: Optional[str] = None,
+            script_name: Optional[str] = None,
     ) -> bool:
         return False
 
-# -------------------------- 全局配置参数 --------------------------
 path = r"D:\采集中\google"
 BASE_XLSX_DIR = os.path.join(path, '样张文件')
 KEYWORD_PATH = r"E:\Crawler\模糊搜索\模糊搜索\json\output\德语\心理学B.json"
@@ -72,16 +80,14 @@ MAX_WORKERS = 8
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'
 URL_CLASS_CONFIG_PATH = 'url_class_keywords.json'
 
-# -------------------------- Redis 配置（两台电脑都连到同一个 Redis） --------------------------
 REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
 REDIS_DB = 0
-REDIS_PREFIX = "crawler"  # 统一前缀，避免污染别的 key
+REDIS_PREFIX = "crawler"
 PROGRESS_REPORT_INTERVAL_SECONDS = 3600
 
 
 def rkey(kind: str, lang: str) -> str:
-    # kind: finished / seen_url / results
     return f"{REDIS_PREFIX}:{kind}:{lang}"
 
 
@@ -94,7 +100,6 @@ def resolve_keyword_path(default_path: str) -> str:
     return os.path.abspath(default_path)
 
 
-# -------------------------- 工具函数 --------------------------
 def is_allowed_file_extension(file_type: str, allowed_extensions: List[str]) -> bool:
     if not file_type:
         return False
@@ -135,7 +140,6 @@ def calculate_file_md5(file_path: str, chunk_size: int = 16384) -> str:
         return ""
 
 
-# -------------------------- Redis：finished / 去重 / 结果写入 --------------------------
 def is_finished_google(keyword: str) -> bool:
     return bool(rds.sismember(f"{REDIS_PREFIX}:keyword_finished:google", keyword))
 
@@ -152,8 +156,8 @@ def finished_count_google() -> int:
 
 
 def is_new_url(lang: str, url: str) -> bool:
-    # 返回 True=首次出现；False=重复
     return rds.sadd(rkey("seen_url", lang), url) == 1
+
 
 def md5_set_key() -> str:
     return f"{REDIS_PREFIX}:seen_md5"
@@ -175,27 +179,20 @@ def rollback_md5(md5_hash: str) -> None:
 
 
 def push_jsonl_line(lang: str, json_obj: Dict) -> None:
-    # ✅ 保证 jsonl 每行格式不变：紧凑 separators=(',',':')
     line = json.dumps(json_obj, ensure_ascii=False, separators=(',', ':'))
     rds.rpush(rkey("results", lang), line)
 
 
-# -------------------------- 数据存储与读取函数 --------------------------
 def load_keywords_with_status(json_path: str) -> List[str]:
     try:
         with open(json_path, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
-            return [
-                item["外文"]
-                for item in data
-                if isinstance(item.get("外文"), str) and item["外文"].strip()
-            ]
+            return [item['外文'] for item in data if '外文' in item]
     except Exception as e:
         logger.error(f"关键词文件加载失败: {str(e)}")
         return []
 
 
-# -------------------------- 网络请求与解析函数 --------------------------
 def test_network_connection() -> bool:
     test_urls = ["https://www.google.com", "https://httpbin.org/ip", "https://www.bing.com"]
     for test_url in test_urls:
@@ -209,7 +206,8 @@ def test_network_connection() -> bool:
     return False
 
 
-async def download_file_async(url: str, save_dir: str, file_type: str, max_retries: int = 1) -> Tuple[Optional[str], Optional[str]]:
+async def download_file_async(url: str, save_dir: str, file_type: str, max_retries: int = 1) -> Tuple[
+    Optional[str], Optional[str]]:
     headers = {
         'User-Agent': USER_AGENT,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -351,16 +349,15 @@ def parse_search_results(page: ChromiumPage, allowed_extensions: List[str]) -> L
         return items
 
 
-# -------------------------- 任务处理函数 --------------------------
 async def process_downloads_async(
-    result_items: List[Dict[str, str]],
-    keyword: str,
-    page_num: int,
-    crawl_time: int,
-    domain_classifier: DomainClassifier,
-    language_detector: LanguageDetector,
-    allowed_extensions: List[str],
-    max_workers: int
+        result_items: List[Dict[str, str]],
+        keyword: str,
+        page_num: int,
+        crawl_time: int,
+        domain_classifier: DomainClassifier,
+        language_detector: LanguageDetector,
+        allowed_extensions: List[str],
+        max_workers: int
 ) -> Tuple[int, int]:
     if not result_items:
         return 0, 0
@@ -370,7 +367,7 @@ async def process_downloads_async(
     async def limited_task(item):
         async with semaphore:
             return await handle_download_task_async(item, keyword, page_num, crawl_time,
-                                                   domain_classifier, language_detector, allowed_extensions)
+                                                    domain_classifier, language_detector, allowed_extensions)
 
     tasks = [limited_task(item) for item in result_items]
 
@@ -389,13 +386,13 @@ async def process_downloads_async(
 
 
 async def handle_download_task_async(
-    result_item: Dict[str, str],
-    original_keyword: str,
-    page_num: int,
-    crawl_time: int,
-    domain_classifier: DomainClassifier,
-    language_detector: LanguageDetector,
-    allowed_extensions: List[str]
+        result_item: Dict[str, str],
+        original_keyword: str,
+        page_num: int,
+        crawl_time: int,
+        domain_classifier: DomainClassifier,
+        language_detector: LanguageDetector,
+        allowed_extensions: List[str]
 ) -> bool:
     url = result_item["url"]
     title = result_item["title"]
@@ -406,10 +403,8 @@ async def handle_download_task_async(
     if not is_allowed_file_extension(file_type, allowed_extensions):
         return False
 
-    # 语言检测（按检测语言分桶）
     final_language = language_detector.detect_with_threshold(lang_detect_text) or "未知"
 
-    # Redis 全局去重（跨机器）
     if not is_new_url(final_language, url):
         logger.info(f"URL已存在（Redis全局去重），跳过: {url[:50]}")
         return False
@@ -425,7 +420,6 @@ async def handle_download_task_async(
     full_host = domain_result["full_host"]
     domain_class = domain_result["domain_class"]
 
-    # ✅ jsonl 行格式保持不变（字段结构不变）
     crawl_json = {
         "webSite": website if website else full_host,
         "crawlTime": crawl_time,
@@ -441,7 +435,6 @@ async def handle_download_task_async(
         }
     }
 
-    # 写入 Redis results 队列（jsonl 每行格式不变）
     push_jsonl_line(final_language, crawl_json)
 
     logger.info(
@@ -465,12 +458,12 @@ def navigate_to_next_page(page: ChromiumPage) -> bool:
 
 
 async def process_keyword_async(
-    page,
-    keyword: str,
-    max_workers: int,
-    domain_classifier: DomainClassifier,
-    language_detector: LanguageDetector,
-    allowed_extensions: List[str]
+        page,
+        keyword: str,
+        max_workers: int,
+        domain_classifier: DomainClassifier,
+        language_detector: LanguageDetector,
+        allowed_extensions: List[str]
 ) -> None:
     logger.info(f"开始处理关键词: {keyword}")
 
@@ -502,7 +495,7 @@ async def process_keyword_async(
                 break
 
             page_num += 1
-            time.sleep(5)
+            time.sleep(8)
 
         except Exception as e:
             logger.error(f"第{page_num}页处理异常: {str(e)[:40]}，停止当前关键词")
@@ -517,10 +510,10 @@ async def process_keyword_async(
 def process_keyword(page, keyword: str, max_workers: int,
                     domain_classifier: DomainClassifier, language_detector: LanguageDetector,
                     allowed_extensions: List[str]) -> None:
-    asyncio.run(process_keyword_async(page, keyword, max_workers, domain_classifier, language_detector, allowed_extensions))
+    asyncio.run(
+        process_keyword_async(page, keyword, max_workers, domain_classifier, language_detector, allowed_extensions))
 
 
-# -------------------------- 主程序 --------------------------
 if __name__ == '__main__':
     LOG_FORMAT = '%(asctime)s | %(levelname)-6s | %(module)s:%(lineno)d | %(message)s'
     logging.basicConfig(
@@ -539,6 +532,7 @@ if __name__ == '__main__':
     completed_count = 0
     run_result_state = {"emitted": False}
 
+
     def emit_run_result_once() -> None:
         if run_result_state["emitted"]:
             return
@@ -553,6 +547,7 @@ if __name__ == '__main__':
         print(f"RUN_RESULT_JSON:{json.dumps(run_result, ensure_ascii=False)}", flush=True)
         run_result_state["emitted"] = True
 
+
     atexit.register(emit_run_result_once)
 
     config: Dict = {
@@ -566,7 +561,6 @@ if __name__ == '__main__':
         "initial_url": 'https://www.google.com.hk/search?q=ddd&oq=ddd&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDEwODlqMGoxqAIAsAIB&sourceid=chrome&ie=UTF-8&sei=dgvnaNTjBs3C4-EP5Nj16Qs'
     }
 
-    # Redis 连接检测
     try:
         rds.ping()
     except Exception as e:
@@ -593,6 +587,44 @@ if __name__ == '__main__':
         raise SystemExit(1)
 
     tab = None
+
+    keywords = load_keywords_with_status(config["keyword_path"])
+    logger.info(f"总关键词数: {len(keywords)}")
+
+    if not keywords:
+        exit_reason = "异常退出"
+        logger.error("无有效关键词，程序终止")
+        # 浏览器还未打开，不需要关闭
+        raise SystemExit(1)
+
+    # 启动推送前先从 Redis 统计“当前json中已完成”的数量
+    skipped_count = sum(1 for kw in keywords if is_finished_google(kw))
+
+    # 如果所有关键词都已完成，直接退出，不启动浏览器
+    if skipped_count >= len(keywords):
+        logger.info(f"所有 {len(keywords)} 个关键词均已完成，无需启动浏览器。")
+        # 构造退出原因和结果
+        exit_reason = "正常结束"
+        completed_count = 0  # 此次运行完成数为0
+
+        # 触发一次结果输出
+        run_result = {
+            "json_path": os.path.abspath(keyword_path),
+            "exit_reason": exit_reason,
+            "done": skipped_count,
+            "total": len(keywords),
+            "start_time": start_dt.strftime('%Y-%m-%d %H:%M:%S'),
+            "end_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        print(f"RUN_RESULT_JSON:{json.dumps(run_result, ensure_ascii=False)}", flush=True)
+        run_result_state["emitted"] = True  # 防止atexit重复输出
+
+        # 不使用 SystemExit，而是直接 return 让它正常退出，或者用 sys.exit(0)
+        # 但因为外面有 atexit，sys.exit(0) 也会触发。
+        # 我们这里直接 sys.exit(0) 即可
+        sys.exit(0)
+
+    # 有未完成的任务，才启动浏览器
     try:
         chrome_options = ChromiumOptions()
         chrome_options.set_user_agent(USER_AGENT)
@@ -608,19 +640,7 @@ if __name__ == '__main__':
         logger.error(f"浏览器初始化失败: {str(e)}")
         raise SystemExit(1)
 
-    keywords = load_keywords_with_status(config["keyword_path"])
-    logger.info(f"总关键词数: {len(keywords)}")
-
-    if not keywords:
-        exit_reason = "异常退出"
-        logger.error("无有效关键词，程序终止")
-        if tab:
-            tab.close()
-        raise SystemExit(1)
-
     current_keyword = None
-    # 启动推送前先从 Redis 统计“当前json中已完成”的数量
-    skipped_count = sum(1 for kw in keywords if is_finished_google(kw))
     run_config = {"keyword_path": config["keyword_path"]}
 
     notify_event(
@@ -635,17 +655,19 @@ if __name__ == '__main__':
 
     progress_stop_event = threading.Event()
 
+
     def progress_report_worker():
         while not progress_stop_event.wait(PROGRESS_REPORT_INTERVAL_SECONDS):
             notify_event(
-                "定时进度汇报（60分钟）",
+                "定时进度汇报（1小时）",
                 start_dt,
                 run_config,
-                extra=f"{skipped_count + completed_count}/{len(keywords)} | 当前关键词: {current_keyword or ''}",
-                throttle_key="progress_30m",
+                extra=f"{skipped_count + completed_count}/{len(keywords)}",
+                throttle_key="progress_60m",
                 error_detail="程序仍在运行中",
                 script_name=script_name,
             )
+
 
     progress_thread = threading.Thread(target=progress_report_worker, daemon=True)
     progress_thread.start()
@@ -654,26 +676,14 @@ if __name__ == '__main__':
         for keyword in keywords:
             current_keyword = keyword
 
-            # ✅ 已完成关键词：写到 crawler:keyword_finished:google
             if is_finished_google(keyword):
                 logger.info(f"跳过已完成关键词: {keyword}")
                 continue
 
-            # 验证码检测：检测到后推送通知并终止本次运行，等待调度重试
             captcha_detected = False
             try:
                 ele = tab.ele('xpath://hr[@noshade]')
                 captcha_detected = bool(ele)
-                if captcha_detected:
-                    notify_event(
-                        "检测到 Google 验证码",
-                        start_dt,
-                        run_config,
-                        extra=f"当前关键词: {current_keyword or ''} | {skipped_count + completed_count}/{len(keywords)}",
-                        throttle_key="captcha",
-                        error_detail="检测到验证码，终止本次运行等待重试",
-                        script_name=script_name,
-                    )
             except Exception as captcha_err:
                 if captcha_detected:
                     logger.warning(f"验证码通知失败: {str(captcha_err)[:80]}")
@@ -699,7 +709,6 @@ if __name__ == '__main__':
                 domain_classifier, language_detector, config["allowed_download_extensions"]
             )
 
-            # ✅ 每个关键词处理完就 SADD 一次（到 google）
             mark_finished_google(keyword)
             completed_count += 1
 
@@ -713,17 +722,7 @@ if __name__ == '__main__':
     except Exception as e:
         exit_reason = "异常退出"
         logger.error(f"程序异常终止 | 当前关键词: {current_keyword} | 错误: {str(e)}")
-        notify_event(
-            "严重异常：未处理Exception",
-            start_dt,
-            run_config,
-            extra=f"当前关键词: {current_keyword or ''} | {skipped_count + completed_count}/{len(keywords)}",
-            throttle_key="fatal_exception",
-            error_detail=str(e),
-            script_name=script_name,
-        )
         if current_keyword:
-            # 异常时也标记（保持你原来的思路）
             if mark_finished_google(current_keyword):
                 completed_count += 1
 
@@ -737,6 +736,7 @@ if __name__ == '__main__':
 
         final_msg = (
             "【Crawler运行结束】\n\n"
+            f"设备: {get_device_name()}\n\n"
             f"结束原因: {exit_reason}\n"
             f"进度: {skipped_count + completed_count}/{len(keywords)}\n"
             f"开始时间: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"

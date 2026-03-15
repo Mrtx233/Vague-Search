@@ -75,9 +75,18 @@ REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
 REDIS_DB = 0
 REDIS_PREFIX = "crawler"
+REDIS_MAX_CONNECTIONS = 50
 PROGRESS_REPORT_INTERVAL_SECONDS = 3600
 
-rds = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+# 使用连接池优化 Redis 连接
+REDIS_POOL = redis.ConnectionPool(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    db=REDIS_DB,
+    decode_responses=True,
+    max_connections=REDIS_MAX_CONNECTIONS
+)
+rds = redis.Redis(connection_pool=REDIS_POOL)
 
 
 def resolve_json_input_file() -> str:
@@ -111,6 +120,14 @@ def seen_url_key_bing(lang: str) -> str:
 
 def is_new_bing_url(lang: str, url: str) -> bool:
     return rds.sadd(seen_url_key_bing(lang), url) == 1
+
+
+def rollback_bing_url(lang: str, url: str) -> None:
+    """回滚URL状态（当下载失败时调用）"""
+    try:
+        rds.srem(seen_url_key_bing(lang), url)
+    except Exception:
+        pass
 
 
 def seen_md5_key_bing() -> str:
@@ -428,13 +445,18 @@ class DrissionPageCrawlerManager:
                     if temp_save_path.exists():
                         temp_save_path.unlink()
                     result['hash'] = ""
+                    # 计算MD5失败也应该回滚URL，允许重试
+                    # 暂时回滚，以防万一
+                    rollback_bing_url(lang, url)
                     return result
             else:
                 logging.error(f"下载失败，跳过: {real_url}")
+                rollback_bing_url(lang, url)
                 return None
 
         except Exception as e:
             logging.error(f"处理结果时出错 {url}: {e}")
+            rollback_bing_url(lang, url)
             return None
 
     def process_keyword_item(self, item: Dict, idx: int, type_: str, time_: str):
@@ -464,9 +486,9 @@ class DrissionPageCrawlerManager:
                 headless=CrawlerConfig.CHROMIUM_HEADLESS
             )
             if not search_results:
-                logging.warning(f" [Keyword {idx}] {keyword} found no results")
+                # logging.warning(f" [Keyword {idx}] {keyword} found no results")
                 self.save_finished_keyword(keyword)
-                logging.info(f" [Keyword {idx}] no results, marked in Redis finished")
+                # logging.info(f" [Keyword {idx}] no results, marked in Redis finished")
                 return
 
             logging.info(f" [关键字 {idx}] {keyword} 找到 {len(search_results)} 个结果")
@@ -504,9 +526,7 @@ class DrissionPageCrawlerManager:
 
         except Exception as e:
             logging.error(f" [关键字 {idx}] 处理关键词 {keyword} 时出错：{e}")
-            # 发生错误时也保存关键字，避免无限重试
-            self.save_finished_keyword(keyword)
-            logging.info(f" [关键字 {idx}] 出错已保存到Redis finished集合（避免重试）")
+            # 发生错误时暂时不保存关键字，允许下次重试
 
     def process_incomplete_downloads(self):
         """Redis模式下不再需要本地JSONL补偿流程。"""
@@ -626,9 +646,7 @@ class DrissionPageCrawlerManager:
 
                 except Exception as e:
                     logging.error(f" [关键字 {idx}] 处理关键词 {keyword} 时出错：{e}")
-                    # 发生其他错误时保存关键字，避免无限重试
-                    self.save_finished_keyword(keyword)
-                    processed_count += 1  # 出错也计数
+                    # 发生其他错误时暂时不保存关键字，允许下次重试（防止因网络波动导致漏抓）
                     # 重置搜索框未找到计数器（因为这是其他类型的错误）
                     searchbox_not_found_count = 0
                     continue
@@ -706,7 +724,7 @@ class DrissionPageCrawlerManager:
             def progress_report_worker():
                 while not progress_stop_event.wait(PROGRESS_REPORT_INTERVAL_SECONDS):
                     notify_event(
-                        "定时进度汇报_ml_bing2",
+                        "定时进度汇报_ml_bing1",
                         start_dt,
                         run_config,
                         extra=f"{progress_done_count()}/{len(all_keywords)} | 当前关键词: {self.current_keyword or ''}",

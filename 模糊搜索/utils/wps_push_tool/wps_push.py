@@ -1,9 +1,18 @@
 import os
 import time
+import socket
 from datetime import datetime
 from typing import Dict, Optional
 
 import requests
+
+
+def get_device_name() -> str:
+    """获取设备名称"""
+    try:
+        return socket.gethostname()
+    except Exception:
+        return "未知设备"
 
 
 WPS_NOTIFY_ENABLED = True
@@ -49,13 +58,14 @@ def notify_event(
     script_name: Optional[str] = None,
 ) -> bool:
     """统一事件通知出口。"""
+    device_name = get_device_name()
     msg = (
-        "【Crawler通知】\n\n"
+        "【Crawler通知】\n"
+        f"设备: {device_name}\n\n"
         f"事件: {event_title}\n"
         f"开始时间: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"运行脚本: {script_name or ''}\n"
         f"关键词文件: {config.get('keyword_path')}\n"
-        f"进度: {extra}\n"
-        f"原因: {error_detail[:120]}"
+        f"进度: {extra}"
     )
     return send_wps_robot(msg, throttle_key=throttle_key)
