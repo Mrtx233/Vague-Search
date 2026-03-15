@@ -45,6 +45,19 @@ def key_to_safe_name(key: str) -> str:
     return key.replace(":", "__")
 
 
+def get_subfolder(key: str) -> str:
+    if ":keyword_finished:" in key or key.endswith(":keyword_finished"):
+        return "keyword_finished"
+    elif ":results:" in key or key.endswith(":results"):
+        return "results"
+    elif ":seen_url:" in key or key.endswith(":seen_url"):
+        return "seen_url"
+    elif ":seen_md5:" in key or key.endswith(":seen_md5"):
+        return "seen_md5"
+    else:
+        return "other"
+
+
 def export_key_data(key: str) -> Dict[str, Any]:
     key_type = r.type(key)
     ttl = r.ttl(key)
@@ -84,7 +97,10 @@ def export_key_data(key: str) -> Dict[str, Any]:
 
 
 def dump_key_file(export_root: str, key: str, data: Dict[str, Any]) -> None:
-    out_file = os.path.join(export_root, f"redis_key__{key_to_safe_name(key)}.json")
+    subfolder = get_subfolder(key)
+    export_dir = os.path.join(export_root, subfolder)
+    ensure_dir(export_dir)
+    out_file = os.path.join(export_dir, f"{key_to_safe_name(key)}.json")
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump({"key": key, **data}, f, ensure_ascii=False, indent=2)
 
@@ -108,38 +124,17 @@ def main() -> None:
     for key in keys:
         print(f"- {key}")
 
-    export_data: Dict[str, Any] = {
-        "meta": {
-            "export_time": int(time.time()),
-            "redis": f"{REDIS_HOST}:{REDIS_PORT}",
-            "db": REDIS_DB,
-            "prefix": REDIS_PREFIX,
-            "matched_keys": len(keys),
-            "export_dir": EXPORT_DIR,
-        },
-        "summary": {},
-        "keys": {},
-    }
-
     type_counter: Counter[str] = Counter()
     for key in keys:
         data = export_key_data(key)
-        export_data["keys"][key] = data
         type_counter[data["type"]] += 1
         dump_key_file(EXPORT_DIR, key, data)
-
-    export_data["summary"] = dict(type_counter)
-
-    out_json = os.path.join(EXPORT_DIR, f"redis_export_{REDIS_PREFIX}_db{REDIS_DB}.json")
-    with open(out_json, "w", encoding="utf-8") as f:
-        json.dump(export_data, f, ensure_ascii=False, indent=2)
 
     print("\n==================== SUMMARY ====================")
     for key_type, count in sorted(type_counter.items()):
         print(f"{key_type:>8}: {count}")
 
     print("\n==================== OUTPUT ====================")
-    print(f"[+] Full export JSON -> {out_json}")
     print(f"[+] Per-key JSON files -> {EXPORT_DIR}")
     print("[+] Done.")
 

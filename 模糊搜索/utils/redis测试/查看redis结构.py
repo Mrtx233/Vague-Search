@@ -18,7 +18,6 @@ def scan_keys(r: Any, pattern: str, count: int = 1000):
         if cursor == 0:
             break
 
-
 def main():
     parser = argparse.ArgumentParser(description="仅列举 Redis key 名称")
     parser.add_argument("--host", default=REDIS_HOST, help="Redis host")
