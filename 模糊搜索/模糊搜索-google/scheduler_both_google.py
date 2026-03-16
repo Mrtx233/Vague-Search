@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple
 # google 脚本在 stdout 打印运行结果时使用的前缀
 RUN_RESULT_PREFIX = "RUN_RESULT_JSON:"
 # 默认 json 文件夹（可按需修改）
-DEFAULT_JSON_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\output\印地语"
+DEFAULT_JSON_DIR = r"D:\code_Python\Vague-Search\模糊搜索\json\output\泰语"
 
 
 def list_json_files(json_dir: Path) -> List[Path]:

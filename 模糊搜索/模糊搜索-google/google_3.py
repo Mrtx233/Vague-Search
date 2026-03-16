@@ -32,7 +32,7 @@ if PROJECT_ROOT not in sys.path:
 
 def _load_wps_push():
     """显式按文件路径加载 wps_push，避免包路径问题。"""
-    module_path = Path(PROJECT_ROOT) / "tools" / "wps_push_tool" / "wps_push.py"
+    module_path = Path(PROJECT_ROOT) / "utils" / "wps_push_tool" / "wps_push.py"
     if not module_path.exists():
         return None
     try:
