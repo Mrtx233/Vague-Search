@@ -56,7 +56,7 @@ URL_CLASS_CONFIG_PATH = 'url_class_keywords.json'
 # -------------------------- Redis 配置（两台电脑都连到同一个 Redis） --------------------------
 REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
-REDIS_DB = 0
+REDIS_DB = 5
 REDIS_PREFIX = "crawler"  # 统一前缀，避免污染别的 key
 PROGRESS_REPORT_INTERVAL_SECONDS = 1800
 

@@ -55,7 +55,7 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(
 
 REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
-REDIS_DB = 0
+REDIS_DB = 5
 REDIS_PREFIX = "crawler"
 REDIS_MAX_CONNECTIONS = 50  # Redis连接池最大连接数
 PROGRESS_REPORT_INTERVAL_SECONDS = 1800
@@ -91,7 +91,7 @@ def finished_count_bing() -> int:
 
 
 def seen_url_key_bing(lang: str) -> str:
-    return f"{REDIS_PREFIX}:seen_url:bing:{lang}"
+    return f"{REDIS_PREFIX}:seen_url:{lang}"
 
 
 def is_new_bing_url(lang: str, url: str) -> bool:
@@ -118,7 +118,7 @@ def rollback_bing_md5(md5_hash: str) -> None:
 
 
 def result_key_bing(lang: str) -> str:
-    return f"{REDIS_PREFIX}:results:bing:{lang}"
+    return f"{REDIS_PREFIX}:results:{lang}"
 
 
 def push_result_line_bing(lang: str, json_obj: Dict) -> None:

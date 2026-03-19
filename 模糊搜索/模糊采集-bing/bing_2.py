@@ -77,7 +77,7 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(
 
 REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
-REDIS_DB = 0
+REDIS_DB = 5
 REDIS_PREFIX = "crawler"
 PROGRESS_REPORT_INTERVAL_SECONDS = 3600
 
