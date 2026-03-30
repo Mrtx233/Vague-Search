@@ -71,7 +71,7 @@ else:
 
 path = r"D:\采集中\google"
 BASE_XLSX_DIR = os.path.join(path, '样张文件')
-KEYWORD_PATH = r"E:\Crawler\模糊搜索\模糊搜索\json\output\德语\心理学B.json"
+KEYWORD_PATH = r"D:\code_Python\Vague-Search\模糊搜索\json\output\泰语\互联网微观关键词_A.json"
 PAGE_TIMEOUT = 40
 MAX_WORKERS = 8
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'

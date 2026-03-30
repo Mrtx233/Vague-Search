@@ -1,0 +1,56 @@
+[
+    {
+        "外文": "Process version iteration",
+        "中文": "流程版本迭代",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process version rollback",
+        "中文": "流程版本回退",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process version comparison",
+        "中文": "流程版本对比",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process Version management",
+        "中文": "流程版本管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process release review",
+        "中文": "流程发布审核",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process is released and launched.",
+        "中文": "流程发布上线",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process release and offline",
+        "中文": "流程发布下线",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process release disabled",
+        "中文": "流程发布禁用",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process release and activation",
+        "中文": "流程发布启用",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    }
+]

@@ -1,0 +1,548 @@
+[
+    {
+        "外文": "Process penetration",
+        "中文": "流程穿透",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process penetration query",
+        "中文": "流程穿透查询",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process penetration monitoring",
+        "中文": "流程穿透监控",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process hierarchical authorization",
+        "中文": "流程分级授权",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "List of process rights and responsibilities",
+        "中文": "流程权责清单",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Separation of rights and responsibilities in the process",
+        "中文": "流程权责分离",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process risk early warning",
+        "中文": "流程风险预警",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process risk prevention and control",
+        "中文": "流程风险防控",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process risk closed loop",
+        "中文": "流程风险闭环",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process compliance verification",
+        "中文": "流程合规校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process compliance audit",
+        "中文": "流程合规审计",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process compliance red line",
+        "中文": "流程合规红线",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The bottom line of process compliance",
+        "中文": "流程合规底线",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process penetration supervision",
+        "中文": "流程穿透监管",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process penetration control",
+        "中文": "流程穿透管控",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process penetration governance",
+        "中文": "流程穿透治理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process penetration analysis",
+        "中文": "流程穿透分析",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process penetration and traceability",
+        "中文": "流程穿透追溯",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent process scheduling",
+        "中文": "流程智能调度",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent process allocation",
+        "中文": "流程智能分配",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent process routing",
+        "中文": "流程智能路由",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent early warning of processes",
+        "中文": "流程智能预警",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent process reminder",
+        "中文": "流程智能提醒",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent process review",
+        "中文": "流程智能审核",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process intelligent rejection",
+        "中文": "流程智能驳回",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent process transfer",
+        "中文": "流程智能转办",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intelligent process signature addition",
+        "中文": "流程智能加签",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Dynamic process configuration",
+        "中文": "流程动态配置",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Dynamic adjustment of the process",
+        "中文": "流程动态调整",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process dynamic branch",
+        "中文": "流程动态分支",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process dynamic node",
+        "中文": "流程动态节点",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process dynamic permission",
+        "中文": "流程动态权限",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Static configuration of the process",
+        "中文": "流程静态配置",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Fixed nodes of the process",
+        "中文": "流程固定节点",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process is fixed and flowing.",
+        "中文": "流程固定流转",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Fixed process rules",
+        "中文": "流程固定规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-dimensional control of processes",
+        "中文": "流程多维度管控",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-dimensional analysis of the process",
+        "中文": "流程多维度分析",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-dimensional statistics of processes",
+        "中文": "流程多维度统计",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-dimensional process monitoring",
+        "中文": "流程多维度监控",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-dimensional early warning of processes",
+        "中文": "流程多维度预警",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Full-cycle process management",
+        "中文": "流程全周期管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Full lifecycle monitoring of the process",
+        "中文": "流程全生命周期监控",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Full-chain monitoring of the process",
+        "中文": "流程全链路监控",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Full-chain traceability of the process",
+        "中文": "流程全链路追溯",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process breakpoint analysis",
+        "中文": "流程断点分析",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process breakpoint recovery",
+        "中文": "流程断点恢复",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Resume review of process breakpoints",
+        "中文": "流程断点续审",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Resume the process from a breakpoint",
+        "中文": "流程断点续办",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process forces a rollback",
+        "中文": "流程强制回退",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Forced process jump",
+        "中文": "流程强制跳转",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process is mandatory and completed",
+        "中文": "流程强制办结",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process is forcibly invalidated",
+        "中文": "流程强制作废",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process forced revocation",
+        "中文": "流程强制撤销",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process invalidation treatment",
+        "中文": "流程作废处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process revocation handling",
+        "中文": "流程撤销处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process remention processing",
+        "中文": "流程重提处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process review and handling",
+        "中文": "流程重审处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process backlog pool",
+        "中文": "流程待办池",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process is in the pool",
+        "中文": "流程在办池",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process has been completed in the pool",
+        "中文": "流程已办池",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process completion pool",
+        "中文": "流程办结池",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process suspension pool",
+        "中文": "流程挂起池",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Supervision of process timeout",
+        "中文": "流程超时督办",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process timeout reminder",
+        "中文": "流程超时提醒",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Automatic processing of process timeouts",
+        "中文": "流程超时自动处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process time limit management",
+        "中文": "流程时限管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process timeliness management",
+        "中文": "流程时效管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process cycle management",
+        "中文": "流程周期管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Batch processing of processes",
+        "中文": "流程批量处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Batch approval of processes",
+        "中文": "流程批量审批",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Batch rejection of the process",
+        "中文": "流程批量驳回",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Batch transfer of processes",
+        "中文": "流程批量转办",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Batch import of processes",
+        "中文": "流程批量导入",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Batch export of processes",
+        "中文": "流程批量导出",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Batch configuration of processes",
+        "中文": "流程批量配置",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process role linkage",
+        "中文": "流程角色联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process and position linkage",
+        "中文": "流程岗位联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Linkage of process departments",
+        "中文": "流程部门联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process system linkage",
+        "中文": "流程系统联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data linkage",
+        "中文": "流程数据联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process message linkage",
+        "中文": "流程消息联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process alarm linkage",
+        "中文": "流程告警联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order linkage",
+        "中文": "流程工单联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task linkage",
+        "中文": "流程任务联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process event linkage",
+        "中文": "流程事件联动",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Pre-process verification",
+        "中文": "流程前置校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Post-process verification",
+        "中文": "流程后置校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Intermediate verification in the process",
+        "中文": "流程中间校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process node verification",
+        "中文": "流程节点校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process flow verification",
+        "中文": "流程流转校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    }
+]

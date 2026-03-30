@@ -6,8 +6,8 @@ import warnings
 import time
 from queue import Queue
 import logging
-import openpyxl
-from xlrd import open_workbook  # 仅保留处理XLS格式的依赖
+from pptx import Presentation
+import win32com.client as win32
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,12 +23,13 @@ THRESHOLD = 0.5  # 判定某语种的置信度阈值（>该值才判定为该语
 NUM_WORKERS = 4  # 默认线程数
 
 # 原有特殊目录
+ARABIC_DIR = "越南语文件"
 OTHER_DIR = "非目标语种文件"
 EMPTY_DIR = "无内容文件"
 ERROR_DIR = "处理失败文件"
 
-# 支持的文件后缀（移除 xlsb）
-SUPPORTED_SUFFIXES = {'xls', 'xlsx', 'xlsm', 'ett', 'et','xlsb'}
+# 支持的文件后缀
+SUPPORTED_SUFFIXES = {'ppt', 'pptx', 'pps', 'ppsx'}
 
 # 用户要求的多语种映射（代码 -> 中文名）
 LANG_MAP = {
@@ -46,73 +47,63 @@ LANG_MAP = {
     'ru': '俄语',
     'th': '泰语',
     'vi': '越南语',
-    'ar': '阿拉伯语',
-    'tr': '土耳其语',
-    'pl': '波兰语',
-    'zh-cn': '简体中文',
-    'zh-tw': '繁体中文'
+    'zh': '中文'
 }
-
-
-def classify_chinese(text):
-    """简单的简繁体中文区分逻辑"""
-    # 常用繁体字特征字符集（部分高频字）
-    traditional_chars = set(
-        "愛罷備貝筆畢邊參倉產長嘗車齒蟲芻從竄達帶單當導燈點電東斗獨斷對兒爾發法飛風婦復蓋干趕個鞏溝構購谷顧刮關觀櫃漢號合轟後胡護壺戶畫劃話懷壞歡環還回會伙獲擊機積極際繼價檢見簡艦漸江將獎漿槳進勁盡經頸靜鏡糾廄舊訣覺絕俊開凱顆殼課墾懇摳庫褲夸塊儈寬礦擴闊蠟臘萊來蘭攔欄爛勞澇樂類厘離麗利勵礫歷厲倆聯蓮連鐮練糧涼兩輛諒療遼鐐獵臨鄰鱗凜齡靈嶺領餾龍聾樓婁錄陸驢輪論羅蘿邏驢鋁屢亂略侖羅落媽馬瑪碼買麥滿饅毛貓錨鉚貿麼霉門悶孟彌秘棉緬廟滅憫敏鳴銘謬謀畝鈉納難撓腦惱鬧膩攆捻釀鳥聶嚙鑷鎳檸獰寧擰濘鈕膿濃農瘧諾歐鷗毆嘔漚盤龐賠噴鵬騙飄頻貧蘋憑評潑頗撲鋪樸譜棲欺臍齊騎豈啟氣棄訖牽扦釺鉛遷簽謙錢鉗潛淺譴塹槍嗆牆薔強搶鍬橋喬僑翹竅切且親輕青傾頃請慶窮秋丘球區曲軀趨驅渠取緒去全缺闕確讓饒擾熱認紉壬仁韌榮絨茹儒軟銳閏潤灑薩鰓賽傘喪騷掃澀殺紗篩曬刪閃陝贍繕傷賞燒紹賒攝懾設紳審嬸腎滲聲繩勝聖師獅濕詩屍時蝕實識駛勢適釋飾視試壽獸樞輸書贖屬術樹豎數帥雙誰稅順說碩爍絲飼聳訟誦搜蘇訴肅酸蒜算雖綏髓歲孫損筍縮瑣鎖獺撻抬態攤貪癱灘壇譚談嘆湯燙濤絛討騰謄銻題體屜條貼鐵廳聽烴銅統頭禿圖塗團頹腿蛻褪托駝橢窪襪彎灣頑萬網韋違圍為濰維葦偉偽緯謂衛溫聞紋穩問甕撾渦窩臥嗚鎢烏污誣無蕪吳塢霧務誤昔析錫犧襲習銑戲細蝦轄峽俠狹廈鍁鮮纖咸賢銜閑顯險現獻縣餡羨憲線廂鑲鄉詳響項蕭銷曉嘯蠍協挾攜脅諧寫瀉謝锌釁興洶鏽綉虛噓須許敘緒續軒懸選癬靴薛學勛詢尋馴訓訊遜壓鴉鴨啞亞訝閹煙鹽嚴顏閻艷厭硯彥諺驗鴦楊揚瘍陽痒養樣瑤搖堯遙窯謠葯爺頁業葉醫銥頤遺儀彝蟻藝億憶義詣議誼譯異繹蔭陰銀飲櫻嬰鷹應纓瑩螢營熒蠅贏穎映喲擁傭癰踴詠泳涌優憂郵鈾猶游誘輿魚漁娛與嶼語吁御獄譽預馭鴛淵轅園員圓緣遠願約躍鑰岳粵悅閱雲鄖勻隕運蘊醞暈韻雜災載攢暫贊贓髒鑿棗責擇則澤賊贈扎札軋閘鍘柵詐齋債氈盞斬輾棧戰綻張漲帳賬脹趙蟄轍鍺這貞針偵診鎮陣掙睜猙爭幀症證隻芝枝知織執職植殖止旨指紙志制擲致秩智質鐘終種腫眾仲軸皺晝驟豬諸誅燭矚囑貯鑄筑駐專磚轉賺桩庄裝妝壯狀錐贅墜綴准捉濁貲資姿滋淄孜紫仔籽滓子自漬字鬃棕蹤宗綜總縱走奏租足卒族祖詛阻組鑽嘴醉最罪遵昨左佐"
-    )
-    
-    # 统计繁体字出现的频率
-    count = sum(1 for char in text if char in traditional_chars)
-    # 如果繁体字占比超过一定比例或数量，认为是繁体，这里简单判定：只要繁体字数量 > 0 且占总字数比例较高，或者简单对比
-    # 由于简体文本中极少出现上述繁体字，我们可以简单地认为：如果繁体特征字出现次数 > 总字数 * 0.05 (5%) 或者 绝对数量超过一定值，则为繁体
-    # 但更简单的逻辑是：如果包含一定量的繁体字，就认为是繁体。
-    
-    # 优化逻辑：对比简体和繁体特征字（这里简化，只看繁体特征）
-    # 如果有超过5个繁体特征字，或者占比超过1%，则认为是繁体
-    if count > 5 or (len(text) > 0 and count / len(text) > 0.01):
-        return 'zh-tw'
-    return 'zh-cn'
 
 
 # ---------------------------------------------------
 
-def extract_text_from_xls(xls_path):
-    """提取XLS格式文件的单元格文本（旧版Excel）"""
+def extract_text_from_pptx(pptx_path):
+    """提取PPTX格式文件的文本（新版PowerPoint）"""
     try:
-        workbook = open_workbook(xls_path, on_demand=True, data_only=True)
+        prs = Presentation(pptx_path)
         full_text = []
-        for sheet_name in workbook.sheet_names():
-            sheet = workbook.sheet_by_name(sheet_name)
-            for row_idx in range(sheet.nrows):
-                for col_idx in range(sheet.ncols):
-                    cell_value = sheet.cell_value(row_idx, col_idx)
-                    if cell_value is not None and str(cell_value).strip():
-                        full_text.append(str(cell_value).strip())
-        workbook.release_resources()
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text") and shape.text.strip():
+                    full_text.append(shape.text.strip())
+                if shape.has_table:
+                    for row in shape.table.rows:
+                        for cell in row.cells:
+                            if cell.text.strip():
+                                full_text.append(cell.text.strip())
         return "\n".join(full_text)
     except Exception as e:
-        logger.error(f"提取XLS文本失败（{xls_path}）: {str(e)}")
+        logger.error(f"提取PPTX文本失败（{pptx_path}）: {str(e)}")
         return ""
 
 
-def extract_text_from_xlsx_xlsm_et_ett(file_path):
-    """提取XLSX/XLSM/ET/ETT格式的单元格文本（含WPS格式）"""
+def extract_text_from_ppt(ppt_path):
+    """提取PPT格式文件的文本（旧版PowerPoint，使用win32com）"""
     try:
-        workbook = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        powerpoint = win32.Dispatch("PowerPoint.Application")
+        powerpoint.Visible = False
+        presentation = powerpoint.Presentations.Open(os.path.abspath(ppt_path), ReadOnly=True, Untitled=True, WithWindow=False)
+        
         full_text = []
-        for sheet_name in workbook.sheetnames:
-            sheet = workbook[sheet_name]
-            if not hasattr(sheet, 'iter_rows'):
-                logger.warning(f"跳过非可读取工作表: {sheet_name}（文件：{os.path.basename(file_path)}）")
-                continue
-            for row in sheet.iter_rows(values_only=True):
-                for cell_value in row:
-                    if cell_value is not None and str(cell_value).strip():
-                        full_text.append(str(cell_value).strip())
-        workbook.close()
+        for slide in presentation.Slides:
+            for shape in slide.Shapes:
+                if shape.HasTextFrame:
+                    if shape.TextFrame.HasText:
+                        text = shape.TextFrame.TextRange.Text.strip()
+                        if text:
+                            full_text.append(text)
+                if shape.HasTable:
+                    for row in range(1, shape.Table.Rows.Count + 1):
+                        for col in range(1, shape.Table.Columns.Count + 1):
+                            cell_text = shape.Table.Cell(row, col).Shape.TextFrame.TextRange.Text.strip()
+                            if cell_text:
+                                full_text.append(cell_text)
+        
+        presentation.Close()
+        powerpoint.Quit()
         return "\n".join(full_text)
     except Exception as e:
-        logger.error(f"提取文本失败（{file_path}）: {str(e)}")
+        logger.error(f"提取PPT文本失败（{ppt_path}）: {str(e)}")
+        try:
+            powerpoint.Quit()
+        except:
+            pass
         return ""
 
 
@@ -122,10 +113,10 @@ def extract_text_by_format(file_path):
     if suffix not in SUPPORTED_SUFFIXES:
         logger.warning(f"不支持的文件格式：{file_path}（仅支持{SUPPORTED_SUFFIXES}）")
         return ""
-    if suffix == 'xls':
-        return extract_text_from_xls(file_path)
-    elif suffix in ['xlsx', 'xlsm', 'et', 'ett']:
-        return extract_text_from_xlsx_xlsm_et_ett(file_path)
+    if suffix in ['pptx', 'ppsx']:
+        return extract_text_from_pptx(file_path)
+    elif suffix in ['ppt', 'pps']:
+        return extract_text_from_ppt(file_path)
     else:
         return ""
 
@@ -154,13 +145,11 @@ def detect_language(text, model, lang_map, threshold=THRESHOLD):
         labels = [l.replace("__label__", "") for l in labels]
         # 优先匹配目标 LANG_MAP
         for code, prob in zip(labels, probs):
-            # 特殊处理中文：FastText返回zh，但LANG_MAP中是zh-cn/zh-tw
-            if code == 'zh' and prob > threshold:
-                detailed_code = classify_chinese(text)
-                return detailed_code, prob, labels[0]
-
             if code in lang_map and prob > threshold:
                 return code, prob, labels[0]
+        # 若 top1 为阿拉伯语并且置信度高，也返回 ar（保留原有阿拉伯识别）
+        if labels and labels[0] == 'ar' and probs[0] > threshold:
+            return 'ar', probs[0], labels[0]
         # 未命中目标语种
         top_code = labels[0] if labels else None
         top_prob = probs[0] if probs else 0.0
@@ -211,8 +200,12 @@ def worker(task_queue, model, output_root):
                 detected_code, prob, top_code = detect_language(text, model, LANG_MAP, threshold=THRESHOLD)
                 if detected_code:
                     # 若检测到的是我们需要的 LANG_MAP 中的语种
-                    display_name = LANG_MAP.get(detected_code, detected_code)
-                    target_dir = f"{display_name}"
+                    if detected_code == 'vi':
+                        target_dir = ARABIC_DIR
+                        display_name = "越南语"
+                    else:
+                        display_name = LANG_MAP.get(detected_code, detected_code)
+                        target_dir = f"{display_name} ({detected_code})"
                     logger.info(f"检测结果：{filename} → {display_name}（代码：{detected_code}，置信度：{prob:.4f}）")
                 else:
                     # 未匹配到目标语种且 top1 不是目标（或者置信度低）
@@ -308,12 +301,11 @@ def batch_process_files(source_dir, output_root, num_workers=NUM_WORKERS):
 
 
 if __name__ == "__main__":
-    # 请根据实际情况修改下面两项路径
-    SOURCE_DIRECTORY = r"E:\数据采集\常规2"  # 源文件目录
-    OUTPUT_ROOT = SOURCE_DIRECTORY  # 结果保存目录（也可以改为其它路径）
+    SOURCE_DIRECTORY = r"C:\Users\ML_WPS\Downloads\样张文件"
+    OUTPUT_ROOT = SOURCE_DIRECTORY
     NUM_WORKERS = 4
 
-    print(f"===== 多语种Excel分类工具 =====")
+    print(f"===== 多语种PPT分类工具 =====")
     print(f"识别目标语种：{', '.join([f'{v}({k})' for k, v in LANG_MAP.items()])}")
     print(f"支持格式：{SUPPORTED_SUFFIXES}")
     print(f"源目录：{SOURCE_DIRECTORY}")
@@ -325,7 +317,8 @@ if __name__ == "__main__":
 
     print("\n===== 处理完成！=====")
     print(f"结果目录：{OUTPUT_ROOT}")
-    print(f"1. 每个目标语种会生成对应文件夹，例如：德语 (de)")
-    print(f"2. {OTHER_DIR}：未命中目标列表或置信度不足的文件")
-    print(f"3. {EMPTY_DIR}：未提取到有效文本的文件")
-    print(f"4. {ERROR_DIR}：无法正常处理的文件")
+    print(f"1. 每个目标语种会生成对应文件夹，例如：德语")
+    print(f"2. {ARABIC_DIR}：检测为越南语的文件")
+    print(f"3. {OTHER_DIR}：未命中目标列表或置信度不足的文件")
+    print(f"4. {EMPTY_DIR}：未提取到有效文本的文件")
+    print(f"5. {ERROR_DIR}：无法正常处理的文件")

@@ -1,0 +1,566 @@
+[
+    {
+        "外文": "Process field verification",
+        "中文": "流程字段校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process format verification",
+        "中文": "流程格式校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process rule verification",
+        "中文": "流程规则校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process permission verification",
+        "中文": "流程权限校验",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data backfilling",
+        "中文": "流程数据回填",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data synchronization",
+        "中文": "流程数据同步",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Asynchronous process data",
+        "中文": "流程数据异步",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data push",
+        "中文": "流程数据推送",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data reporting",
+        "中文": "流程数据上报",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data distribution",
+        "中文": "流程数据下发",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data summary",
+        "中文": "流程数据汇总",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data splitting",
+        "中文": "流程数据拆分",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data archiving",
+        "中文": "流程数据归档",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process archiving management",
+        "中文": "流程归档管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process archive management",
+        "中文": "流程档案管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process data management",
+        "中文": "流程资料管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process attachment management",
+        "中文": "流程附件管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process material management",
+        "中文": "流程材料管理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process material correction",
+        "中文": "流程材料补正",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Rejection of process materials",
+        "中文": "流程材料驳回",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Return of process materials",
+        "中文": "流程材料退回",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Retransmission of process materials",
+        "中文": "流程材料重传",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-level approval process",
+        "中文": "流程多级审批",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-level rejection process",
+        "中文": "流程多级驳回",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-level process transfer",
+        "中文": "流程多级转办",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Multi-level co-signature of the process",
+        "中文": "流程多级会签",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process parallel co-signature",
+        "中文": "流程并行会签",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process serial co-signature",
+        "中文": "流程串行会签",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process will be co-signed in sequence",
+        "中文": "流程依次会签",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process is co-signed simultaneously",
+        "中文": "流程同时会签",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process summary and co-signature",
+        "中文": "流程汇总会签",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process or signing rules",
+        "中文": "流程或签规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process co-signature rules",
+        "中文": "流程会签规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process add-on rules",
+        "中文": "流程加签规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process deduction rules",
+        "中文": "流程减签规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process transfer rules",
+        "中文": "流程转办规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process delegation rules",
+        "中文": "流程委派规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process agent rules",
+        "中文": "流程代理规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process authorization rules",
+        "中文": "流程授权规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process inheritance rules",
+        "中文": "流程继承规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process recycling rules",
+        "中文": "流程回收规则",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process recovery permission",
+        "中文": "流程回收权限",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process recovery task",
+        "中文": "流程回收任务",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process recovery pending",
+        "中文": "流程回收待办",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process recovery has been completed",
+        "中文": "流程回收办结",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process recycling is suspended",
+        "中文": "流程回收挂起",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task claim",
+        "中文": "流程任务认领",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task allocation",
+        "中文": "流程任务分配",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task order snatching",
+        "中文": "流程任务抢单",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task assignment",
+        "中文": "流程任务派单",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task order acceptance",
+        "中文": "流程任务接单",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process task has been completed",
+        "中文": "流程任务办结",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task return",
+        "中文": "流程任务退回",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Rework the process tasks",
+        "中文": "流程任务重办",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process task is invalidated",
+        "中文": "流程任务作废",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process task archiving",
+        "中文": "流程任务归档",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order generation",
+        "中文": "流程工单生成",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order processing",
+        "中文": "流程工单处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "The process work order has been completed",
+        "中文": "流程工单办结",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Archiving process work orders",
+        "中文": "流程工单归档",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order follow-up",
+        "中文": "流程工单回访",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order review",
+        "中文": "流程工单复核",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order audit",
+        "中文": "流程工单稽核",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order statistics",
+        "中文": "流程工单统计",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process work order analysis",
+        "中文": "流程工单分析",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Abnormal process work order",
+        "中文": "流程异常工单",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process abnormal node",
+        "中文": "流程异常节点",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Abnormal process flow",
+        "中文": "流程异常流转",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process abnormal data",
+        "中文": "流程异常数据",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process exception handling",
+        "中文": "流程异常处理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Reporting of process anomalies",
+        "中文": "流程异常上报",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process anomaly alarm",
+        "中文": "流程异常告警",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process anomaly recovery",
+        "中文": "流程异常恢复",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process anomaly closed loop",
+        "中文": "流程异常闭环",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process anomaly review",
+        "中文": "流程异常复盘",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process efficiency analysis",
+        "中文": "流程效率分析",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process efficiency optimization",
+        "中文": "流程效率优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Improvement of process efficiency",
+        "中文": "流程效率提升",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process efficiency statistics",
+        "中文": "流程效率统计",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process efficiency ranking",
+        "中文": "流程效率排名",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process flow efficiency",
+        "中文": "流程流转效率",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process processing efficiency",
+        "中文": "流程处理效率",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process approval efficiency",
+        "中文": "流程审批效率",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process processing efficiency",
+        "中文": "流程办理效率",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process bottleneck positioning",
+        "中文": "流程瓶颈定位",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Optimization of process bottlenecks",
+        "中文": "流程瓶颈优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Elimination of process bottlenecks",
+        "中文": "流程瓶颈消除",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process redundancy clearance",
+        "中文": "流程冗余清理",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process redundancy optimization",
+        "中文": "流程冗余优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process simplification and optimization",
+        "中文": "流程简化优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Streamline and optimize the process",
+        "中文": "流程精简优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process integration and optimization",
+        "中文": "流程整合优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process reengineering and optimization",
+        "中文": "流程重构优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    },
+    {
+        "外文": "Process upgrade and optimization",
+        "中文": "流程升级优化",
+        "语种": "en",
+        "类别": "工程业务场景的流程图2"
+    }
+]
