@@ -3,14 +3,12 @@ import re
 import time
 import os
 import sys
-import threading
 import logging
 import json
 import random
 import hashlib
 import asyncio
 from typing import List, Tuple, Dict, Optional
-from datetime import datetime
 
 import requests
 import aiohttp
@@ -26,39 +24,26 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-try:
-    from utils.wps推送.wps_push import send_wps_robot, notify_event
-except Exception:
-    def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
-        return False
-
-    def notify_event(
-        event_title: str,
-        start_dt: datetime,
-        config: Dict,
-        extra: str = "",
-        throttle_key: str = "event",
-        error_detail: str = "",
-        jsonl_filename: Optional[str] = None,
-        script_name: Optional[str] = None,
-    ) -> bool:
-        return False
 
 # -------------------------- 全局配置参数 --------------------------
 path = r"E:\采集中\google"
 BASE_XLSX_DIR = os.path.join(path, '样张文件')
 KEYWORD_PATH = r"D:\code_Python\Vague-Search\模糊搜索\json\output\印度尼西亚语\IT_T.json"
 PAGE_TIMEOUT = 40
+SEARCH_FILE_EXTENSION = "xlsx"
+ALLOWED_DOWNLOAD_EXTENSIONS = ['xlsx', 'xls', 'ett', 'et', 'xlsb', 'xlsm']
 MAX_WORKERS = 12  # 异步下载并发数（优化后）
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'
 URL_CLASS_CONFIG_PATH = 'url_class_keywords.json'
+LANGUAGE_MODEL_PATH = 'lid.176.bin'
+LANGUAGE_CONFIDENCE_THRESHOLD = 0.8
+INITIAL_URL = 'https://www.google.com.hk/search?q=ddd&oq=ddd&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDEwODlqMGoxqAIAsAIB&sourceid=chrome&ie=UTF-8&sei=dgvnaNTjBs3C4-EP5Nj16Qs'
 
 # -------------------------- Redis 配置（两台电脑都连到同一个 Redis） --------------------------
 REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
 REDIS_DB = 5
 REDIS_PREFIX = "crawler"  # 统一前缀，避免污染别的 key
-PROGRESS_REPORT_INTERVAL_SECONDS = 1800
 
 
 def rkey(kind: str, lang: str) -> str:
@@ -486,20 +471,6 @@ if __name__ == '__main__':
         handlers=[logging.StreamHandler()]
     )
     logger = logging.getLogger(__name__)
-    start_dt = datetime.now()
-    script_name = os.path.basename(__file__)
-    exit_reason = "正常结束"
-
-    config: Dict = {
-        "search_file_extension": "xlsx",
-        "allowed_download_extensions": ['xlsx', 'xls', 'ett', 'et', 'xlsb', 'xlsm'],
-        "keyword_path": KEYWORD_PATH,
-        "max_workers": MAX_WORKERS,
-        "domain_config_path": URL_CLASS_CONFIG_PATH,
-        "language_model_path": 'lid.176.bin',
-        "language_confidence_threshold": 0.8,
-        "initial_url": 'https://www.google.com.hk/search?q=ddd&oq=ddd&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDEwODlqMGoxqAIAsAIB&sourceid=chrome&ie=UTF-8&sei=dgvnaNTjBs3C4-EP5Nj16Qs'
-    }
 
     # Redis 连接检测
     try:
@@ -508,8 +479,8 @@ if __name__ == '__main__':
         logger.error(f"Redis 连接失败: {REDIS_HOST}:{REDIS_PORT} -> {e}")
         raise
 
-    domain_classifier = DomainClassifier(config["domain_config_path"])
-    language_detector = LanguageDetector(config["language_model_path"], config["language_confidence_threshold"])
+    domain_classifier = DomainClassifier(URL_CLASS_CONFIG_PATH)
+    language_detector = LanguageDetector(LANGUAGE_MODEL_PATH, LANGUAGE_CONFIDENCE_THRESHOLD)
 
     if not domain_classifier.is_config_loaded():
         logger.warning("域名分类配置加载失败，域名分类功能将失效")
@@ -518,8 +489,8 @@ if __name__ == '__main__':
 
     os.makedirs(BASE_XLSX_DIR, exist_ok=True)
     logger.info(f"文件存储目录: {BASE_XLSX_DIR}")
-    logger.info(f"搜索使用的文件类型: {config['search_file_extension']}")
-    logger.info(f"允许下载的文件类型: {', '.join(config['allowed_download_extensions'])}")
+    logger.info(f"搜索使用的文件类型: {SEARCH_FILE_EXTENSION}")
+    logger.info(f"允许下载的文件类型: {', '.join(ALLOWED_DOWNLOAD_EXTENSIONS)}")
 
     if not test_network_connection():
         logger.error("网络连接异常，请检查网络设置")
@@ -535,13 +506,13 @@ if __name__ == '__main__':
         chrome = Chromium(chrome_options)
         tab = chrome.latest_tab
         tab.clear_cache(True, True)
-        tab.get(config["initial_url"])
+        tab.get(INITIAL_URL)
 
     except Exception as e:
         logger.error(f"浏览器初始化失败: {str(e)}")
         raise SystemExit(1)
 
-    keywords = load_keywords_with_status(config["keyword_path"])
+    keywords = load_keywords_with_status(KEYWORD_PATH)
     logger.info(f"总关键词数: {len(keywords)}")
 
     if not keywords:
@@ -551,37 +522,7 @@ if __name__ == '__main__':
         raise SystemExit(1)
 
     current_keyword = None
-    # 启动推送前先从 Redis 统计“当前json中已完成”的数量
-    skipped_count = sum(1 for kw in keywords if is_finished_google(kw))
-    completed_count = 0
-    run_config = {"keyword_path": config["keyword_path"]}
 
-    notify_event(
-        "程序启动：Crawler开始运行",
-        start_dt,
-        run_config,
-        extra=f"{skipped_count + completed_count}/{len(keywords)}",
-        throttle_key="startup",
-        error_detail="关键词已加载，准备开始爬取",
-        script_name=script_name,
-    )
-
-    progress_stop_event = threading.Event()
-
-    def progress_report_worker():
-        while not progress_stop_event.wait(PROGRESS_REPORT_INTERVAL_SECONDS):
-            notify_event(
-                "定时进度汇报（30分钟）",
-                start_dt,
-                run_config,
-                extra=f"{skipped_count + completed_count}/{len(keywords)} | 当前关键词: {current_keyword or ''}",
-                throttle_key="progress_30m",
-                error_detail="程序仍在运行中",
-                script_name=script_name,
-            )
-
-    progress_thread = threading.Thread(target=progress_report_worker, daemon=True)
-    progress_thread.start()
 
     try:
         for keyword in keywords:
@@ -596,15 +537,6 @@ if __name__ == '__main__':
             try:
                 ele = tab.ele('xpath://hr[@noshade]')
                 if ele:
-                    notify_event(
-                        "检测到 Google 验证码",
-                        start_dt,
-                        run_config,
-                        extra=f"当前关键词: {current_keyword or ''} | {skipped_count + completed_count}/{len(keywords)}",
-                        throttle_key="captcha",
-                        error_detail="请人工完成验证后按回车继续",
-                        script_name=script_name,
-                    )
                     input("检测到验证码，请完成验证后按回车继续...")
             except Exception:
                 pass
@@ -614,61 +546,29 @@ if __name__ == '__main__':
             search_box.clear()
             time.sleep(0.2)
 
-            search_query = f'"{keyword}" filetype:{config["search_file_extension"]}'
+            search_query = f'"{keyword}" filetype:{SEARCH_FILE_EXTENSION}'
             tab.wait(10)
             search_box.input(search_query)
             search_box.input('\n')
             logger.info(f"已提交搜索: {search_query}")
 
             process_keyword(
-                tab, keyword, config["max_workers"],
-                domain_classifier, language_detector, config["allowed_download_extensions"]
+                tab, keyword, MAX_WORKERS,
+                domain_classifier, language_detector, ALLOWED_DOWNLOAD_EXTENSIONS
             )
 
             # ✅ 每个关键词处理完就 SADD 一次（到 google）
             mark_finished_google(keyword)
-            completed_count += 1
 
             clear_browser_data(tab)
             time.sleep(random.uniform(0.5, 1))
 
     except KeyboardInterrupt:
-        exit_reason = "用户手动停止"
         logger.warning("检测到手动中断，准备退出...")
 
     except Exception as e:
-        exit_reason = "异常退出"
         logger.error(f"程序异常终止 | 当前关键词: {current_keyword} | 错误: {str(e)}")
-        notify_event(
-            "严重异常：未处理Exception",
-            start_dt,
-            run_config,
-            extra=f"当前关键词: {current_keyword or ''} | {skipped_count + completed_count}/{len(keywords)}",
-            throttle_key="fatal_exception",
-            error_detail=str(e),
-            script_name=script_name,
-        )
-        if current_keyword:
-            # 异常时也标记（保持你原来的思路）
-            if mark_finished_google(current_keyword):
-                completed_count += 1
-
     finally:
-        progress_stop_event.set()
-        progress_thread.join(timeout=1)
-
-        end_dt = datetime.now()
         if tab:
             tab.close()
-
-        final_msg = (
-            "【Crawler运行结束】\n\n"
-            f"结束原因: {exit_reason}\n"
-            f"进度: {skipped_count + completed_count}/{len(keywords)}\n"
-            f"开始时间: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"结束时间: {end_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"运行脚本: {script_name}\n"
-            f"关键词文件: {config['keyword_path']}"
-        )
-        send_wps_robot(final_msg, throttle_key="final")
         logger.info("程序执行完毕，浏览器已关闭")

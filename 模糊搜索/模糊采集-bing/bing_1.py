@@ -23,24 +23,6 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 try:
-    from utils.wps推送.wps_push import send_wps_robot, notify_event
-except Exception:
-    def send_wps_robot(content: str, throttle_key: str = "default", timeout: int = 10) -> bool:
-        return False
-
-    def notify_event(
-        event_title: str,
-        start_dt: datetime,
-        config: Dict,
-        extra: str = "",
-        throttle_key: str = "event",
-        error_detail: str = "",
-        jsonl_filename: Optional[str] = None,
-        script_name: Optional[str] = None,
-    ) -> bool:
-        return False
-
-try:
     import fasttext
 
     fasttext_available = True
@@ -53,13 +35,20 @@ except ImportError:
 urllib3.disable_warnings()
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(message)s')
 
+# 全局配置参数
+BASE_DIRECTORY = r"E:\采集中\bing"
+JSON_INPUT_FILE = r"D:\code_Python\Vague-Search\模糊搜索\json\output\印度尼西亚语\IT_A.json"
+SEARCH_FILE_TYPE = 'xlsx'
+TIME_FILTER = ''
+MAX_CONCURRENT_WORKERS = 1
+ALLOWED_EXTENSIONS = ['xlsx', 'xls', 'ett', 'et', 'xlsb', 'xlsm']
+FASTTEXT_MODEL_PATH = r"lid.176.bin"
+
 REDIS_HOST = "10.229.32.166"
 REDIS_PORT = 6379
 REDIS_DB = 5
 REDIS_PREFIX = "crawler"
 REDIS_MAX_CONNECTIONS = 50  # Redis连接池最大连接数
-PROGRESS_REPORT_INTERVAL_SECONDS = 1800
-
 # 使用连接池优化 Redis 连接
 REDIS_POOL = redis.ConnectionPool(
     host=REDIS_HOST,
@@ -635,12 +624,7 @@ class DrissionPageCrawlerManager:
         """主运行函数"""
         json_file_path = os.path.abspath(json_file_path)
         start_dt = datetime.now()
-        script_name = os.path.basename(__file__)
         exit_reason = "正常结束"
-        run_config = {"keyword_path": json_file_path}
-
-        progress_stop_event = threading.Event()
-        progress_thread = None
         data = []
         all_keywords = []
 
@@ -676,31 +660,6 @@ class DrissionPageCrawlerManager:
             logging.info(
                 f"总共 {len(data)} 个关键词，其中 {len(pending_items)} 个待处理，{len(data) - len(pending_items)} 个已完成")
 
-            notify_event(
-                "程序启动：Crawler开始运行",
-                start_dt,
-                run_config,
-                extra=f"{progress_done_count()}/{len(all_keywords)}",
-                throttle_key="startup",
-                error_detail="关键词已加载，准备开始爬取",
-                script_name=script_name,
-            )
-
-            def progress_report_worker():
-                while not progress_stop_event.wait(PROGRESS_REPORT_INTERVAL_SECONDS):
-                    notify_event(
-                        "定时进度汇报（30分钟）",
-                        start_dt,
-                        run_config,
-                        extra=f"{progress_done_count()}/{len(all_keywords)} | 当前关键词: {self.current_keyword or ''}",
-                        throttle_key="progress_30m",
-                        error_detail="程序仍在运行中",
-                        script_name=script_name,
-                    )
-
-            progress_thread = threading.Thread(target=progress_report_worker, daemon=True)
-            progress_thread.start()
-
             if not pending_items:
                 logging.info("所有关键词都已处理完成，无需重复执行！")
                 return
@@ -715,32 +674,10 @@ class DrissionPageCrawlerManager:
         except json.JSONDecodeError as e:
             exit_reason = "异常退出"
             logging.error(f"解析JSON文件 {json_file_path} 时出错: {e}")
-            notify_event(
-                "严重异常：未处理Exception",
-                start_dt,
-                run_config,
-                extra=f"当前关键词: {self.current_keyword or ''} | {progress_done_count()}/{len(all_keywords)}",
-                throttle_key="fatal_exception",
-                error_detail=str(e),
-                script_name=script_name,
-            )
         except Exception as e:
             exit_reason = "异常退出"
             logging.error(f"程序异常终止: {e}")
-            notify_event(
-                "严重异常：未处理Exception",
-                start_dt,
-                run_config,
-                extra=f"当前关键词: {self.current_keyword or ''} | {progress_done_count()}/{len(all_keywords)}",
-                throttle_key="fatal_exception",
-                error_detail=str(e),
-                script_name=script_name,
-            )
         finally:
-            progress_stop_event.set()
-            if progress_thread:
-                progress_thread.join(timeout=1)
-
             if CrawlerConfig.SEARCH_DOWNLOAD_PARALLEL:
                 self.stop_download_executor()
 
@@ -750,17 +687,6 @@ class DrissionPageCrawlerManager:
             logging.info("所有任务（搜索+下载）完全完成！")
 
             end_dt = datetime.now()
-            final_msg = (
-                "【Crawler运行结束】\n\n"
-                f"结束原因: {exit_reason}\n"
-                f"进度: {final_count}/{len(all_keywords)}\n"
-                f"开始时间: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
-                f"结束时间: {end_dt.strftime('%Y-%m-%d %H:%M:%S')}\n"
-                f"运行脚本: {script_name}\n"
-                f"关键词文件: {json_file_path}"
-            )
-            send_wps_robot(final_msg, throttle_key="final")
-
             run_result = {
                 "json_path": json_file_path,
                 "exit_reason": exit_reason,
@@ -774,18 +700,9 @@ class DrissionPageCrawlerManager:
 
 # ---------- 脚本主入口 ----------
 if __name__ == '__main__':
-    # 配置参数
-    base_directory = r"E:\采集中\bing"  # 基础目录
-    json_input_file = r"D:\code_Python\Vague-Search\模糊搜索\json\output\印度尼西亚语\IT_A.json"
-    if not json_input_file.strip():
+    if not JSON_INPUT_FILE.strip():
         raise SystemExit("请先在脚本中设置 json_input_file，不支持命令行参数覆盖。")
-    json_input_file = os.path.abspath(json_input_file)
-    file_type = 'xlsx'  # 搜索的文件类型
-    time_filter = ''  # 时间过滤条件（空字符串表示不限制）
-    max_concurrent_workers = CrawlerConfig.DEFAULT_MAX_WORKERS  # 最大并发线程数
-
-    allowed_extensions = ['xlsx', 'xls', 'ett', 'et', 'xlsb','xlsm']
-    fasttext_model_path = r"lid.176.bin"
+    json_input_file = os.path.abspath(JSON_INPUT_FILE)
 
     # Redis 连接检测
     try:
@@ -796,5 +713,10 @@ if __name__ == '__main__':
         raise SystemExit(1)
 
     # 创建爬虫管理器并运行
-    crawler = DrissionPageCrawlerManager(base_directory, max_concurrent_workers, fasttext_model_path,allowed_extensions)
-    crawler.run(json_input_file, file_type, time_filter)
+    crawler = DrissionPageCrawlerManager(
+        BASE_DIRECTORY,
+        MAX_CONCURRENT_WORKERS,
+        FASTTEXT_MODEL_PATH,
+        ALLOWED_EXTENSIONS,
+    )
+    crawler.run(json_input_file, SEARCH_FILE_TYPE, TIME_FILTER)
